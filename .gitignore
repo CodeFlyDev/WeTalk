@@ -1,0 +1,35 @@
+# Java / Maven
+wetalk-server/target/
+wetalk-server/.mvn/
+wetalk-server/mvnw
+wetalk-server/mvnw.cmd
+*.class
+*.jar
+*.war
+*.log
+
+# Node
+wetalk-web/node_modules/
+wetalk-web/dist/
+wetalk-web/.vite/
+wetalk-web/*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Internal planning (not for public repo)
+Task.md
+
+# OS
+desktop.ini
