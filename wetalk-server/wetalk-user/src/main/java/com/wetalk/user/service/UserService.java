@@ -8,6 +8,8 @@ import com.wetalk.user.repository.UserAccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * 用户领域服务 —— 供 auth / friend / group 等模块调用（模块化单体：本地方法调用）
  */
@@ -52,5 +54,19 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserView toView(UserAccount user) {
         return new UserView(user.getId(), user.getUsername(), user.getNickname(), user.getAvatarUrl());
+    }
+
+    /** 用户搜索（用户名 / 昵称模糊匹配，最多 10 条） */
+    @Transactional(readOnly = true)
+    public List<UserView> search(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        String kw = keyword.trim();
+        return repository
+                .findTop10ByUsernameContainingIgnoreCaseOrNicknameContainingIgnoreCaseOrderByIdAsc(kw, kw)
+                .stream()
+                .map(this::toView)
+                .toList();
     }
 }

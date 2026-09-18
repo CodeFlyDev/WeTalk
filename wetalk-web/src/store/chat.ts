@@ -5,6 +5,7 @@ import { groupApi } from '@/api/groups'
 import { messageApi } from '@/api/messages'
 import { uploadFile } from '@/api/files'
 import { errorMessage, newClientMsgId, isGroupConversation, ConversationIds } from '@/lib/utils'
+import { notifyDesktop } from '@/lib/desktop'
 import { socket } from '@/ws/socket'
 import { useAuthStore } from './auth'
 import type {
@@ -218,6 +219,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((s) => ({
         unread: { ...s.unread, [view.conversationId]: (s.unread[view.conversationId] ?? 0) + 1 }
       }))
+      // Tauri 桌面端原生通知（Web 端静默跳过）
+      const sender = state.friendById[view.senderId]
+      const senderName = sender?.nickname || sender?.username || `用户 ${view.senderId}`
+      const preview =
+        view.type === 'IMAGE'
+          ? '[图片]'
+          : view.type === 'FILE'
+            ? `[文件] ${view.content}`
+            : view.content
+      notifyDesktop('WeTalk', `${senderName}：${preview}`)
     }
     bumpConversation(set, view)
   },

@@ -3,6 +3,7 @@ package com.wetalk.user.repository;
 import com.wetalk.user.entity.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
@@ -10,4 +11,8 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     Optional<UserAccount> findByUsername(String username);
 
     boolean existsByUsername(String username);
+
+    /** 用户搜索：用户名或昵称模糊匹配，返回前 10 条（id 升序） */
+    List<UserAccount> findTop10ByUsernameContainingIgnoreCaseOrNicknameContainingIgnoreCaseOrderByIdAsc(
+            String username, String nickname);
 }
