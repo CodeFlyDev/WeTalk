@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, MessageSquare, Users } from 'lucide-react'
+import { LogOut, MessageSquare, Search, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn, formatTime } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useChatStore, type Conversation } from '@/store/chat'
 import ContactsPanel from '@/components/contacts/ContactsPanel'
+import GlobalSearchDialog from '@/components/chat/GlobalSearchDialog'
 import type { WsStatus } from '@/ws/socket'
 
 type Tab = 'chats' | 'contacts'
@@ -19,6 +20,7 @@ const WS_LABEL: Record<WsStatus, string> = {
 
 export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
   const [tab, setTab] = useState<Tab>('chats')
+  const [searchOpen, setSearchOpen] = useState(false)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const conversations = useChatStore((s) => s.conversations)
@@ -58,6 +60,15 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* 全局搜索入口 */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="mx-3 mt-3 flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground hover:bg-accent"
+      >
+        <Search className="h-3.5 w-3.5" />
+        搜索消息…
+      </button>
 
       {/* Tab 切换 */}
       <div className="flex border-b">
@@ -109,6 +120,8 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
       ) : (
         <ContactsPanel />
       )}
+
+      <GlobalSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
     </aside>
   )
 }
@@ -164,5 +177,6 @@ function previewText(msg: { type: string; content: string; recalled?: boolean })
   if (msg.type === 'FILE') return `[文件] ${msg.content}`
   if (msg.type === 'VOICE') return '[语音]'
   if (msg.type === 'VIDEO') return '[视频]'
+  if (msg.type === 'RED_PACKET') return '[红包]'
   return msg.content
 }

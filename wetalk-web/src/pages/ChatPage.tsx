@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Phone, Video } from 'lucide-react'
+import { Phone, Search, Video } from 'lucide-react'
 import Sidebar from '@/components/chat/Sidebar'
 import MessageList from '@/components/chat/MessageList'
 import ChatInput from '@/components/chat/ChatInput'
+import SearchPanel from '@/components/chat/SearchPanel'
 import CallOverlay from '@/components/call/CallOverlay'
 import { Button } from '@/components/ui/button'
 import { useChatStore } from '@/store/chat'
@@ -20,6 +21,7 @@ export default function ChatPage() {
   const conversations = useChatStore((s) => s.conversations)
   const startCall = useCallStore((s) => s.startCall)
   const [wsStatus, setWsStatus] = useState<WsStatus>(socket.status)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   useEffect(() => {
     void init()
@@ -46,31 +48,40 @@ export default function ChatPage() {
               <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 {active.type === 'group' ? '群聊' : '单聊'}
               </span>
-              {active.type === 'dm' && active.peerId != null && (
-                <div className="ml-auto flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="语音通话"
-                    onClick={() =>
-                      void startCall(active.peerId!, active.name, 'AUDIO')
-                    }
-                  >
-                    <Phone className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="视频通话"
-                    onClick={() =>
-                      void startCall(active.peerId!, active.name, 'VIDEO')
-                    }
-                  >
-                    <Video className="h-5 w-5" />
-                  </Button>
-                </div>
-              )}
+              <div className="ml-auto flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="在会话中查找"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+                {active.type === 'dm' && active.peerId != null && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="语音通话"
+                      onClick={() => void startCall(active.peerId!, active.name, 'AUDIO')}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="视频通话"
+                      onClick={() => void startCall(active.peerId!, active.name, 'VIDEO')}
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </header>
+            {searchOpen && (
+              <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} conversation={active} />
+            )}
             {initialized && (
               <>
                 <MessageList conversation={active} />

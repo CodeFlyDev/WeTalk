@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
-import { Check, Download, FileText, Loader2, Reply, Undo2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { Check, Download, FileText, Loader2, Pause, Play, Reply, Undo2, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
-import { cn, formatTime } from '@/lib/utils'
+import { cn, errorMessage, formatTime } from '@/lib/utils'
 import { getFileUrl } from '@/api/files'
 import { messageApi } from '@/api/messages'
+import { aiApi } from '@/api/ai'
+import RedPacketCard from './RedPacketCard'
 import type { LocalMessage, Conversation } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
@@ -204,6 +207,8 @@ export function previewOf(m: MessageView): string {
       return '[语音]'
     case 'VIDEO':
       return '[视频]'
+    case 'RED_PACKET':
+      return '[红包]'
     case 'EMOJI':
       return m.content
     default:
@@ -224,10 +229,101 @@ function MessageBody({ message: m, conversation }: { message: LocalMessage; conv
   if (m.type === 'IMAGE' && m.refObjectKey) {
     return <ImageMessage objectKey={m.refObjectKey} alt={m.content} />
   }
-  if ((m.type === 'FILE' || m.type === 'VOICE' || m.type === 'VIDEO') && m.refObjectKey) {
+  if (m.type === 'VOICE' && m.refObjectKey) {
+    return <VoiceMessage objectKey={m.refObjectKey} seconds={Number(m.content) || 0} messageId={m.id} />
+  }
+  if ((m.type === 'FILE' || m.type === 'VIDEO') && m.refObjectKey) {
     return <FileMessage name={m.content} objectKey={m.refObjectKey} />
   }
+  if (m.type === 'RED_PACKET' && m.content) {
+    return <RedPacketCard redPacketId={m.content} />
+  }
   return <TextWithMentions content={m.content} names={memberNames} />
+}
+
+/** 语音消息：点击播放/暂停 + 「转文字」，content 存时长秒数 */
+function VoiceMessage({ objectKey, seconds, messageId }: { objectKey: string; seconds: number; messageId: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const [transcript, setTranscript] = useState<string | null>(null)
+  const [transcribing, setTranscribing] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  useEffect(() => {
+    void getFileUrl(objectKey).then(setUrl).catch(() => setUrl(null))
+  }, [objectKey])
+
+  function toggle() {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      audio.pause()
+    } else {
+      void audio.play()
+    }
+  }
+
+  async function transcribe() {
+    if (transcribing || transcript !== null) return
+    setTranscribing(true)
+    try {
+      setTranscript(await aiApi.transcribe(messageId))
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  return (
+    <div className="flex min-w-32 flex-wrap items-center gap-2 py-0.5">
+      <button
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+        onClick={toggle}
+        disabled={!url}
+        title={playing ? '暂停' : '播放'}
+      >
+        {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+      </button>
+      {/* 假波形：按时长成比例 */}
+      <div className="flex h-5 flex-1 items-center gap-[2px]">
+        {Array.from({ length: 18 }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              'w-[2px] rounded-full',
+              playing ? 'bg-primary/70' : 'bg-muted-foreground/40'
+            )}
+            style={{ height: `${6 + ((i * 7 + seconds * 3) % 12)}px` }}
+          />
+        ))}
+      </div>
+      <span className="shrink-0 text-xs text-muted-foreground">{seconds}&Prime;</span>
+      <button
+        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        title={transcript !== null ? '已转写' : '转文字'}
+        onClick={() => void transcribe()}
+        disabled={transcribing}
+      >
+        {transcribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+      </button>
+      {url && (
+        <audio
+          ref={audioRef}
+          src={url}
+          onEnded={() => setPlaying(false)}
+          onPause={() => setPlaying(false)}
+          onPlay={() => setPlaying(true)}
+          hidden
+        />
+      )}
+      {transcript !== null && transcript !== '' && (
+        <p className="w-full rounded-md bg-muted/60 px-2 py-1 text-xs leading-relaxed text-muted-foreground">
+          {transcript}
+        </p>
+      )}
+    </div>
+  )
 }
 
 /** 文本渲染：@成员名 高亮 */

@@ -33,6 +33,17 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+  # ---- Elasticsearch（消息全文检索，应用层双写；compose 默认 8.14.3 无安全模式）----
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+
+# ---- RocketMQ（红包事务消息：半消息 → 本地事务 → 回查；compose 默认 5.3.1）----
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+  producer:
+    group: wetalk-producer
+    send-message-timeout: 5000
+
 # ---- WeTalk 自有配置 ----
 wetalk:
   jwt:
@@ -45,6 +56,9 @@ wetalk:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
     bucket: wetalk
+  ai:
+    whisper-url: ${WHISPER_URL:http://localhost:8001}
+    whisper-model: ${WHISPER_MODEL:Systran/faster-whisper-small}
 
 management:
   endpoints:

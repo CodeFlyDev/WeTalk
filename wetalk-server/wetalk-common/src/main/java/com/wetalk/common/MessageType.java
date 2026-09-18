@@ -8,5 +8,5 @@ public enum MessageType {
     VIDEO,       EMOJI,       LOCATION,    CARD,
     SYSTEM,      RECALL,      READ_ACK,    TYPING,
     CALL_OFFER,  CALL_ANSWER, CALL_ICE,    CALL_END,
-    TRANSFER,    VOTE,        WHITEBOARD
+    TRANSFER,    RED_PACKET,  VOTE,        WHITEBOARD
 }

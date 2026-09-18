@@ -1,16 +1,22 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import { FileUp, Image as ImageIcon, Smile, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { toast } from 'sonner'
+import { FileUp, Image as ImageIcon, Mic, Smile, Trash2, Send as SendIcon, Wallet, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmojiPicker } from './EmojiPicker'
+import RedPacketDialog from './RedPacketDialog'
 import { previewOf } from './MessageItem'
 import type { Conversation, SendOptions } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
 
+/** 录音上限（秒），与后端 MAX 限制对齐 */
+const MAX_RECORD_SECONDS = 60
+
 /** 输入区：文本（Enter 发送 / Shift+Enter 换行）+ 表情面板 + 图片/文件发送 + 引用回复 + @ 提及 */
 export default function ChatInput({ conversation }: { conversation: Conversation }) {
   const sendText = useChatStore((s) => s.sendText)
   const sendFile = useChatStore((s) => s.sendFile)
+  const sendVoice = useChatStore((s) => s.sendVoice)
   const replyTo = useChatStore((s) => s.replyTo)
   const setReplyTo = useChatStore((s) => s.setReplyTo)
   const groups = useChatStore((s) => s.groups)
@@ -19,9 +25,72 @@ export default function ChatInput({ conversation }: { conversation: Conversation
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionIds, setMentionIds] = useState<number[]>([])
+  const [recording, setRecording] = useState(false)
+  const [recordSeconds, setRecordSeconds] = useState(0)
+  const [rpOpen, setRpOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const secondsRef = useRef(0)
+  const cancelRef = useRef(false)
+
+  /** 录音计时清理 */
+  function stopRecordTimer() {
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current)
+      recordTimerRef.current = null
+    }
+  }
+
+  function startRecording() {
+    if (recording) return
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        const rec = new MediaRecorder(stream)
+        recorderRef.current = rec
+        chunksRef.current = []
+        secondsRef.current = 0
+        cancelRef.current = false
+        rec.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data)
+        }
+        rec.onstop = () => {
+          stream.getTracks().forEach((t) => t.stop())
+          stopRecordTimer()
+          const seconds = secondsRef.current
+          setRecording(false)
+          setRecordSeconds(0)
+          recorderRef.current = null
+          if (cancelRef.current || seconds < 1) {
+            toast.info(cancelRef.current ? '已取消发送' : '录音时间太短')
+            return
+          }
+          const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
+          void sendVoice(target, blob, seconds)
+        }
+        rec.start()
+        setRecording(true)
+        recordTimerRef.current = setInterval(() => {
+          secondsRef.current += 1
+          setRecordSeconds(secondsRef.current)
+          if (secondsRef.current >= MAX_RECORD_SECONDS) {
+            recorderRef.current?.state === 'recording' && recorderRef.current.stop()
+          }
+        }, 1000)
+      })
+      .catch(() => toast.error('无法访问麦克风，请检查浏览器权限'))
+  }
+
+  function stopRecording(cancel: boolean) {
+    cancelRef.current = cancel
+    if (recorderRef.current?.state === 'recording') {
+      recorderRef.current.stop()
+    }
+  }
 
   const target = conversation.type === 'dm' ? { peerId: conversation.peerId } : { groupId: conversation.groupId }
 
@@ -146,15 +215,30 @@ export default function ChatInput({ conversation }: { conversation: Conversation
       )}
 
       <div className="flex items-center gap-1 px-3 pt-2">
-        <Button variant="ghost" size="icon" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
-          <Smile className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" title="发送图片" onClick={() => onPickFile('IMAGE')}>
-          <ImageIcon className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" title="发送文件" onClick={() => onPickFile('FILE')}>
-          <FileUp className="h-5 w-5" />
-        </Button>
+        {!recording && (
+          <>
+            <Button variant="ghost" size="icon" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
+              <Smile className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" title="发送图片" onClick={() => onPickFile('IMAGE')}>
+              <ImageIcon className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" title="发送文件" onClick={() => onPickFile('FILE')}>
+              <FileUp className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" title="发红包" onClick={() => setRpOpen(true)}>
+              <Wallet className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="按住说话（点击开始录音）"
+              onClick={startRecording}
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+          </>
+        )}
         <input
           ref={imageInputRef}
           type="file"
@@ -165,26 +249,49 @@ export default function ChatInput({ conversation }: { conversation: Conversation
         <input ref={fileInputRef} type="file" hidden onChange={(e) => void handleFileChange(e, 'FILE')} />
       </div>
 
-      <div className="flex items-end gap-2 px-3 py-2">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value)
-            detectMention(e.target.value, e.target.selectionStart)
-          }}
-          onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
-          onKeyDown={onKey}
-          placeholder={
-            conversation.type === 'group' ? '输入消息，@ 可提及成员，Enter 发送' : '输入消息，Enter 发送，Shift+Enter 换行'
-          }
-          rows={2}
-          className="scrollbar-thin max-h-32 flex-1 resize-none rounded-md bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
-        />
-        <Button size="lg" onClick={() => void submit()} disabled={!text.trim()}>
-          发送
-        </Button>
-      </div>
+      <RedPacketDialog conversation={conversation} open={rpOpen} onClose={() => setRpOpen(false)} />
+
+      {recording ? (
+        <div className="flex items-center gap-3 px-3 py-3">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+          </span>
+          <span className="text-sm tabular-nums text-muted-foreground">
+            录音中 {String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:
+            {String(recordSeconds % 60).padStart(2, '0')} / {MAX_RECORD_SECONDS}s
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => stopRecording(true)}>
+              <Trash2 className="mr-1 h-4 w-4" /> 取消
+            </Button>
+            <Button size="sm" onClick={() => stopRecording(false)}>
+              <SendIcon className="mr-1 h-4 w-4" /> 发送
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-end gap-2 px-3 py-2">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value)
+              detectMention(e.target.value, e.target.selectionStart)
+            }}
+            onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+            onKeyDown={onKey}
+            placeholder={
+              conversation.type === 'group' ? '输入消息，@ 可提及成员，Enter 发送' : '输入消息，Enter 发送，Shift+Enter 换行'
+            }
+            rows={2}
+            className="scrollbar-thin max-h-32 flex-1 resize-none rounded-md bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <Button size="lg" onClick={() => void submit()} disabled={!text.trim()}>
+            发送
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

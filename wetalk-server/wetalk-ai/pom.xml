@@ -11,12 +11,28 @@
 
     <artifactId>wetalk-ai</artifactId>
     <name>wetalk-ai</name>
-    <description>AI 服务（Spring AI + Ollama）</description>
+    <description>AI 服务（语音转写 Whisper；Spring AI + Ollama 助手后续接入）</description>
 
     <dependencies>
         <dependency>
             <groupId>com.wetalk</groupId>
             <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- 复用 MessageService 做消息级参与者校验 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- 复用 MinioClient bean 从私有桶取语音 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-file</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
     </dependencies>
 </project>

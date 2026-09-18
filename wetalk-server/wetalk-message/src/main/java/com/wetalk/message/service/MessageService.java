@@ -11,6 +11,7 @@ import com.wetalk.message.port.FriendPort;
 import com.wetalk.message.port.GroupPort;
 import com.wetalk.message.presence.UnreadService;
 import com.wetalk.message.repository.MessageRepository;
+import com.wetalk.message.search.MessageIndexer;
 import com.wetalk.message.util.ConversationIds;
 import com.wetalk.user.service.UserService;
 import org.springframework.stereotype.Service;
@@ -40,24 +41,38 @@ public class MessageService {
     private final GroupPort groupPort;
     private final MessageDeliveryService deliveryService;
     private final UnreadService unreadService;
+    private final MessageIndexer searchIndexer;
 
     public MessageService(MessageRepository messageRepository,
                           UserService userService,
                           FriendPort friendPort,
                           GroupPort groupPort,
                           MessageDeliveryService deliveryService,
-                          UnreadService unreadService) {
+                          UnreadService unreadService,
+                          MessageIndexer searchIndexer) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.friendPort = friendPort;
         this.groupPort = groupPort;
         this.deliveryService = deliveryService;
         this.unreadService = unreadService;
+        this.searchIndexer = searchIndexer;
     }
 
     public SendResult send(Long senderId, SendMessageRequest request) {
         validate(request);
+        return doSend(senderId, request);
+    }
 
+    /** 模块内部发送：跳过客户端类型白名单（RED_PACKET 等业务消息由服务端产生），其余校验与推送链路一致 */
+    public SendResult sendInternal(Long senderId, SendMessageRequest request) {
+        if (request.isGroupMessage() == (request.receiverId() == null)) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "receiverId 与 groupId 必须二选一");
+        }
+        return doSend(senderId, request);
+    }
+
+    private SendResult doSend(Long senderId, SendMessageRequest request) {
         MessageDoc doc = new MessageDoc();
         doc.setSenderId(senderId);
         doc.setType(request.type());
@@ -111,6 +126,7 @@ public class MessageService {
 
         messageRepository.save(doc);
         deliveryService.deliver(doc, recipients);
+        searchIndexer.index(doc);
         return toResult(doc);
     }
 
@@ -133,6 +149,7 @@ public class MessageService {
         doc.setRecalled(true);
         doc.setRecalledAt(LocalDateTime.now());
         messageRepository.save(doc);
+        searchIndexer.delete(messageId);
 
         List<Long> recipients = doc.getGroupId() != null
                 ? groupPort.memberIds(doc.getGroupId()).stream().filter(id -> !id.equals(userId)).toList()
@@ -177,6 +194,37 @@ public class MessageService {
 
     public void clearUnread(Long userId, String conversationId) {
         unreadService.clear(userId, conversationId);
+    }
+
+    /** 会话内全文检索（ES 双写索引，故障降级返回空列表） */
+    public List<MessageView> search(Long userId, String conversationId, String keyword, int limit) {
+        assertParticipant(userId, conversationId);
+        int size = limit <= 0 ? 20 : Math.min(limit, 50);
+        return searchIndexer.search(conversationId, keyword, size);
+    }
+
+    /** 全局检索「与我相关」的消息（我的单聊 + 我所在的群聊） */
+    public List<MessageView> searchGlobal(Long userId, String keyword, int limit) {
+        int size = limit <= 0 ? 20 : Math.min(limit, 50);
+        return searchIndexer.searchGlobal(userId, groupPort.myGroupIds(userId), keyword, size);
+    }
+
+    /** 会话参与者校验：dm 校验双方，g 校验群成员 */
+    private void assertParticipant(Long userId, String conversationId) {
+        boolean participant;
+        if (conversationId.startsWith("g:")) {
+            participant = groupPort.isMember(Long.parseLong(conversationId.substring(2)), userId);
+        } else if (conversationId.startsWith("dm:")) {
+            String[] parts = conversationId.substring(3).split(":");
+            long a = Long.parseLong(parts[0]);
+            long b = Long.parseLong(parts[1]);
+            participant = userId == a || userId == b;
+        } else {
+            participant = false;
+        }
+        if (!participant) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权访问该会话");
+        }
     }
 
     private void validate(SendMessageRequest request) {

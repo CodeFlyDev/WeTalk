@@ -29,6 +29,7 @@ export type MessageType =
   | 'EMOJI'
   | 'LOCATION'
   | 'CARD'
+  | 'RED_PACKET'
   | 'RECALL'
 
 export interface SendMessageRequest {
@@ -96,6 +97,48 @@ export interface PresignResult {
   objectKey: string
   uploadUrl: string
   uploadExpireSeconds: number
+}
+
+/* ---------- 钱包 / 红包（对齐 wetalk-wallet dto，金额单位「分」） ---------- */
+
+export interface WalletTxView {
+  id: number
+  type: string
+  amount: number
+  refId: string | null
+  remark: string | null
+  createdAt: string
+}
+
+export interface WalletView {
+  balance: number
+  transactions: WalletTxView[]
+}
+
+export interface RedPacketItemView {
+  idx: number
+  amount: number
+  receiverId: number
+  receiverName: string
+  receivedAt: string
+}
+
+export interface RedPacketView {
+  id: string
+  senderId: number
+  senderName: string
+  conversationId: string
+  totalAmount: number
+  count: number
+  type: 'ORDINARY' | 'LUCKY'
+  greeting: string
+  status: 'ACTIVE' | 'FINISHED' | 'EXPIRED'
+  expireAt: string
+  /** 我领取到的金额（分），未领为 null */
+  receivedByMe: number | null
+  canGrab: boolean
+  remainCount: number
+  items: RedPacketItemView[]
 }
 
 /** ws /user/queue/notify 事件 */

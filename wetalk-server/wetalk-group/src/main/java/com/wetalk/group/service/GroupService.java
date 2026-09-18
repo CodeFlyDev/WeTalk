@@ -75,6 +75,14 @@ public class GroupService implements GroupPort {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> myGroupIds(long userId) {
+        return memberRepository.findByUserId(userId).stream()
+                .map(GroupMember::getGroupId)
+                .toList();
+    }
+
     @Transactional
     public void addMembers(Long operatorId, Long groupId, List<Long> userIds) {
         requireById(groupId);

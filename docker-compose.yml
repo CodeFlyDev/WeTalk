@@ -29,6 +29,8 @@ volumes:
   minio-data:
   kafka-data:
   keycloak-data:
+  rocketmq-broker-data:
+  rocketmq-broker-logs:
 
 services:
   mysql:
@@ -132,6 +134,52 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    networks: [wetalk-net]
+
+  # 本地语音转写（OpenAI 兼容 /v1/audio/transcriptions；首次启动自动下载模型）
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: wetalk-whisper
+    restart: unless-stopped
+    environment:
+      WHISPER__MODEL: ${WHISPER_MODEL:Systran/faster-whisper-small}
+    ports:
+      - "8001:8000"
+    networks: [wetalk-net]
+
+  # RocketMQ（红包事务消息）：namesrv 9876 + broker 10909/10911
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: wetalk-rocketmq-namesrv
+    restart: unless-stopped
+    command: sh mqnamesrv
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m"
+    ports:
+      - "9876:9876"
+    networks: [wetalk-net]
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.3.1
+    container_name: wetalk-rocketmq-broker
+    restart: unless-stopped
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/conf/broker.conf
+    depends_on: [rocketmq-namesrv]
+    environment:
+      JAVA_OPT_EXT: "-Xms512m -Xmx512m -Xmn256m"
+    ports:
+      - "10909:10909"   # VIP 通道
+      - "10911:10911"   # remoting 主端口（宿主机 Java 客户端直连）
+    volumes:
+      - ./wetalk-infra/docker/rocketmq/broker.conf:/home/rocketmq/conf/broker.conf:ro
+      - rocketmq-broker-data:/home/rocketmq/store
+      - rocketmq-broker-logs:/home/rocketmq/logs
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n rocketmq-namesrv:9876 | grep -q broker-a"]
+      interval: 20s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
     networks: [wetalk-net]
 
   kafka:
@@ -240,6 +288,7 @@ services:
       REDIS_HOST: "redis"
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+      ROCKETMQ_NAMESRV: "rocketmq-namesrv:9876"
       MINIO_ENDPOINT: "http://minio:9000"
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
@@ -261,6 +310,8 @@ services:
       minio:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      rocketmq-broker:
         condition: service_healthy
       keycloak:
         condition: service_healthy

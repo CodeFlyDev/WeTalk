@@ -15,6 +15,8 @@ export interface ActiveCall {
   phase: CallPhase
   muted: boolean
   camOff: boolean
+  /** 正在共享屏幕（视频轨已替换为屏幕采集） */
+  sharing: boolean
 }
 
 export interface IncomingCall {
@@ -35,6 +37,7 @@ interface CallState {
   hangup: () => void
   toggleMute: () => void
   toggleCam: () => void
+  toggleScreen: () => Promise<void>
 }
 
 /* ---------- 非序列化运行时（不进 store） ---------- */
@@ -44,6 +47,8 @@ let localStream: MediaStream | null = null
 let remoteStream: MediaStream | null = null
 let pendingIce: RTCIceCandidateInit[] = []
 let ringingTimer: ReturnType<typeof setTimeout> | null = null
+let screenTrack: MediaStreamTrack | null = null
+let cameraTrack: MediaStreamTrack | null = null
 
 /** 主叫振铃超时 */
 const RING_TIMEOUT_MS = 60_000
@@ -96,6 +101,9 @@ export const useCallStore = create<CallState>((set, get) => {
   function teardown() {
     stopRingingTimer()
     pendingIce = []
+    screenTrack?.stop()
+    screenTrack = null
+    cameraTrack = null
     localStream?.getTracks().forEach((t) => t.stop())
     localStream = null
     remoteStream = null
@@ -107,6 +115,33 @@ export const useCallStore = create<CallState>((set, get) => {
       pc = null
     }
     set({ active: null, incoming: null, streamVersion: 0 })
+  }
+
+  /** 将视频轨替换进发送器与本地预览流（屏幕共享切换） */
+  function replaceVideoTrack(track: MediaStreamTrack) {
+    const sender = pc?.getSenders().find((s) => s.track?.kind === 'video')
+    void sender?.replaceTrack(track)
+    if (localStream) {
+      for (const vt of localStream.getVideoTracks()) localStream.removeTrack(vt)
+      localStream.addTrack(track)
+    }
+  }
+
+  function stopScreenShare() {
+    screenTrack?.stop()
+    screenTrack = null
+    if (cameraTrack && cameraTrack.readyState === 'live') {
+      replaceVideoTrack(cameraTrack)
+      set((s) => ({ active: s.active ? { ...s.active, sharing: false } : null }))
+    } else {
+      cameraTrack = null
+      // 摄像头轨已不可用：通知对端视频已停止
+      const active = get().active
+      if (active) {
+        send({ callId: active.callId, event: 'END' })
+        teardown()
+      }
+    }
   }
 
   async function createPeerConnection(): Promise<RTCPeerConnection> {
@@ -284,7 +319,7 @@ export const useCallStore = create<CallState>((set, get) => {
       const conn = await createPeerConnection()
       localStream?.getTracks().forEach((t) => conn.addTrack(t, localStream!))
       set({
-        active: { callId, peerId, peerName, media, phase: 'outgoing', muted: false, camOff: false }
+        active: { callId, peerId, peerName, media, phase: 'outgoing', muted: false, camOff: false, sharing: false }
       })
       socket.sendVoip({ peerId, callId, event: 'INVITE', media })
       stopRingingTimer()
@@ -320,7 +355,8 @@ export const useCallStore = create<CallState>((set, get) => {
           media: incoming.media,
           phase: 'incoming',
           muted: false,
-          camOff: false
+          camOff: false,
+          sharing: false
         }
       })
       send({ callId: incoming.callId, event: 'ACCEPT' })
@@ -355,6 +391,28 @@ export const useCallStore = create<CallState>((set, get) => {
       const camOff = !active.camOff
       localStream?.getVideoTracks().forEach((t) => (t.enabled = !camOff))
       set((s) => ({ active: s.active ? { ...s.active, camOff } : null }))
+    },
+
+    toggleScreen: async () => {
+      const active = get().active
+      if (!active) return
+      if (screenTrack) {
+        stopScreenShare()
+        return
+      }
+      try {
+        const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+        screenTrack = display.getVideoTracks()[0] ?? null
+        if (!screenTrack) return
+        cameraTrack = localStream?.getVideoTracks()[0] ?? null
+        screenTrack.onended = () => {
+          if (screenTrack) stopScreenShare()
+        }
+        replaceVideoTrack(screenTrack)
+        set((s) => ({ active: s.active ? { ...s.active, sharing: true, camOff: false } : null }))
+      } catch {
+        // 用户取消了窗口选择
+      }
     }
   }
 })

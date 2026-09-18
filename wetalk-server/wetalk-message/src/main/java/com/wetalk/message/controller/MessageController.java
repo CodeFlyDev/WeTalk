@@ -47,6 +47,21 @@ public class MessageController {
         return ApiResult.ok(messageService.get(CurrentUser.id(), id));
     }
 
+    /** 会话内全文检索（ES 索引，故障降级返回空列表） */
+    @GetMapping("/search")
+    public ApiResult<List<MessageView>> search(@RequestParam String conversationId,
+                                               @RequestParam String keyword,
+                                               @RequestParam(defaultValue = "20") int limit) {
+        return ApiResult.ok(messageService.search(CurrentUser.id(), conversationId, keyword, limit));
+    }
+
+    /** 全局检索与我相关的消息（我的单聊 + 我所在的群聊） */
+    @GetMapping("/search/global")
+    public ApiResult<List<MessageView>> searchGlobal(@RequestParam String keyword,
+                                                     @RequestParam(defaultValue = "20") int limit) {
+        return ApiResult.ok(messageService.searchGlobal(CurrentUser.id(), keyword, limit));
+    }
+
     /** 撤回自己发送的消息（2 分钟内） */
     @PostMapping("/{id}/recall")
     public ApiResult<MessageView> recall(@PathVariable String id) {

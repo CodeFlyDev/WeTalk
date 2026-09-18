@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react'
+import { Mic, MicOff, MonitorUp, Phone, PhoneOff, Video, VideoOff } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -69,6 +69,7 @@ function ActivePanel() {
   const streamVersion = useCallStore((s) => s.streamVersion)
   const toggleMute = useCallStore((s) => s.toggleMute)
   const toggleCam = useCallStore((s) => s.toggleCam)
+  const toggleScreen = useCallStore((s) => s.toggleScreen)
   const hangup = useCallStore((s) => s.hangup)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -127,15 +128,26 @@ function ActivePanel() {
           {active.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
         </Button>
         {active.media === 'VIDEO' && (
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn('h-10 w-10 rounded-full', active.camOff && 'bg-red-500 text-white hover:bg-red-600')}
-            title={active.camOff ? '开启摄像头' : '关闭摄像头'}
-            onClick={toggleCam}
-          >
-            {active.camOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn('h-10 w-10 rounded-full', active.camOff && 'bg-red-500 text-white hover:bg-red-600')}
+              title={active.camOff ? '开启摄像头' : '关闭摄像头'}
+              onClick={toggleCam}
+            >
+              {active.camOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn('h-10 w-10 rounded-full', active.sharing && 'bg-primary text-primary-foreground')}
+              title={active.sharing ? '停止共享' : '共享屏幕'}
+              onClick={() => void toggleScreen()}
+            >
+              <MonitorUp className="h-4 w-4" />
+            </Button>
+          </>
         )}
         <Button
           size="icon"

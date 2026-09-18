@@ -10,4 +10,7 @@ public interface GroupPort {
     boolean isMember(long groupId, long userId);
 
     List<Long> memberIds(long groupId);
+
+    /** 用户所在的全部群 ID（全局搜索用） */
+    List<Long> myGroupIds(long userId);
 }

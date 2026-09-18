@@ -56,8 +56,12 @@ interface ChatState {
   setActive: (id: string | null) => void
   sendText: (target: ConversationTarget, content: string, opts?: SendOptions) => Promise<void>
   sendFile: (target: ConversationTarget, file: File, type: MessageType, opts?: SendOptions) => Promise<void>
+  /** 语音消息：content = 时长秒数字符串 */
+  sendVoice: (target: ConversationTarget, blob: Blob, seconds: number) => Promise<void>
   recallMessage: (id: string, conversationId: string) => Promise<void>
   setReplyTo: (m: LocalMessage | null) => void
+  /** 全局搜索跳转：会话不存在时本地补建占位 */
+  ensureConversation: (conv: Conversation) => void
   handleIncoming: (view: MessageView) => void
   handleNotify: (payload: NotifyPayload) => void
   clearUnread: (id: string) => Promise<void>
@@ -198,6 +202,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  sendVoice: async (target, blob, seconds) => {
+    const clientMsgId = newClientMsgId()
+    const selfId = useAuthStore.getState().user!.id
+    const convId = conversationIdOf(target, selfId)
+    const file = new File([blob], `voice-${clientMsgId}.webm`, { type: blob.type || 'audio/webm' })
+    const placeholder: LocalMessage = {
+      id: `pending:${clientMsgId}`,
+      conversationId: convId,
+      senderId: selfId,
+      receiverId: target.peerId ?? null,
+      groupId: target.groupId ?? null,
+      type: 'VOICE',
+      content: String(seconds),
+      refObjectKey: null,
+      replyToId: null,
+      mentionedUserIds: null,
+      clientMsgId,
+      recalled: false,
+      createdAt: new Date().toISOString(),
+      pending: true
+    }
+    appendMessage(set, convId, placeholder)
+    try {
+      const presign = await uploadFile(file, clientMsgId)
+      await sendRequest(
+        target,
+        { type: 'VOICE', content: String(seconds), refObjectKey: presign.objectKey, clientMsgId },
+        set,
+        get
+      )
+    } catch (err) {
+      markFailed(set, convId, clientMsgId)
+      toast.error(errorMessage(err))
+    }
+  },
+
   recallMessage: async (id, conversationId) => {
     try {
       await messageApi.recall(id)
@@ -215,6 +255,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setReplyTo: (m) => set({ replyTo: m }),
+
+  ensureConversation: (conv) =>
+    set((s) =>
+      s.conversations.some((c) => c.id === conv.id) ? {} : { conversations: [conv, ...s.conversations] }
+    ),
 
   handleIncoming: (view) => {
     const state = get()
