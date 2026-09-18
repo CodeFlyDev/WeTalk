@@ -1,0 +1,27 @@
+{
+  "realm": "wetalk",
+  "displayName": "WeTalk",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "clients": [
+    {
+      "clientId": "wetalk-web",
+      "name": "WeTalk Web",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "https://wetalk.example.com/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "https://wetalk.example.com"
+      ],
+      "protocol": "openid-connect"
+    }
+  ]
+}

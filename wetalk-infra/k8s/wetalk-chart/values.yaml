@@ -1,0 +1,51 @@
+# ============================================================
+# WeTalk 生产发布默认值
+# 用法参考 Task.md · 系统服务部署 · Step 4：
+#   helm upgrade --install wetalk wetalk-infra/k8s/wetalk-chart \
+#     --namespace wetalk --create-namespace \
+#     -f values-prod.yaml --set image.tag=<git-sha>
+# ============================================================
+
+image:
+  repository: wetalk-server
+  tag: latest
+  pullPolicy: IfNotPresent
+  # pullSecrets:
+  #   - harbor-secret
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: wetalk.example.com
+  annotations:
+    # WebSocket 长连接超时
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# 业务环境变量透传（config 全量收敛到 Nacos 后精简）
+env: {}
+  # SPRING_PROFILES_ACTIVE: k8s

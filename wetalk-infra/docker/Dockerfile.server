@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# WeTalk 后端多阶段构建（wetalk-server Maven 骨架落地后即可用）
+# 构建：docker build -t wetalk-server:1.0.0 -f wetalk-infra/docker/Dockerfile.server .
+# =============================================================================
+
+# ---------- 构建阶段 ----------
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY wetalk-server/ .
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw -q -pl wetalk-app -am package -DskipTests
+
+# ---------- 运行阶段 ----------
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /build/wetalk-app/target/*.jar app.jar
+RUN useradd -r -u 10001 wetalk && chown wetalk: app.jar
+USER wetalk
+
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseZGC"
+EXPOSE 8080 9090
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
