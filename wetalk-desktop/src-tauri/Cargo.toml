@@ -1,0 +1,15 @@
+[package]
+name = "wetalk-desktop"
+version = "0.1.0"
+description = "WeTalk PC 桌面客户端（Tauri 2）"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+strip = true
+lto = true

@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wetalk-app
+
+  # ---- MySQL（结构化数据：用户/关系/群组/钱包）----
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/wetalk?useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USERNAME:wetalk}
+    password: ${MYSQL_PASSWORD:}
+
+  # ---- MongoDB（消息历史，时间序列）----
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/wetalk}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+
+  # ---- Kafka（异步消息 / 离线投递 / 事件总线）----
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

@@ -9,7 +9,7 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY wetalk-server/ .
 RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -q -pl wetalk-app -am package -DskipTests
+    mvn -q -pl wetalk-app -am package -DskipTests
 
 # ---------- 运行阶段 ----------
 FROM eclipse-temurin:21-jre
