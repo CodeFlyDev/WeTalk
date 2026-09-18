@@ -158,8 +158,11 @@ function ConversationRow({
   )
 }
 
-function previewText(msg: { type: string; content: string }) {
+function previewText(msg: { type: string; content: string; recalled?: boolean }) {
+  if (msg.type === 'RECALL' || msg.recalled) return '消息已撤回'
   if (msg.type === 'IMAGE') return '[图片]'
   if (msg.type === 'FILE') return `[文件] ${msg.content}`
+  if (msg.type === 'VOICE') return '[语音]'
+  if (msg.type === 'VIDEO') return '[视频]'
   return msg.content
 }

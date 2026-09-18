@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Phone, Video } from 'lucide-react'
 import Sidebar from '@/components/chat/Sidebar'
 import MessageList from '@/components/chat/MessageList'
 import ChatInput from '@/components/chat/ChatInput'
+import CallOverlay from '@/components/call/CallOverlay'
+import { Button } from '@/components/ui/button'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
+import { useCallStore } from '@/webrtc/call'
 import { socket, type WsStatus } from '@/ws/socket'
 
 /** 主框架：左侧会话列表 + 右侧聊天区 */
@@ -14,6 +18,7 @@ export default function ChatPage() {
   const handleNotify = useChatStore((s) => s.handleNotify)
   const activeId = useChatStore((s) => s.activeId)
   const conversations = useChatStore((s) => s.conversations)
+  const startCall = useCallStore((s) => s.startCall)
   const [wsStatus, setWsStatus] = useState<WsStatus>(socket.status)
 
   useEffect(() => {
@@ -41,6 +46,30 @@ export default function ChatPage() {
               <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 {active.type === 'group' ? '群聊' : '单聊'}
               </span>
+              {active.type === 'dm' && active.peerId != null && (
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="语音通话"
+                    onClick={() =>
+                      void startCall(active.peerId!, active.name, 'AUDIO')
+                    }
+                  >
+                    <Phone className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="视频通话"
+                    onClick={() =>
+                      void startCall(active.peerId!, active.name, 'VIDEO')
+                    }
+                  >
+                    <Video className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
             </header>
             {initialized && (
               <>
@@ -57,6 +86,8 @@ export default function ChatPage() {
           </div>
         )}
       </main>
+      {/* 通话浮层：来电弹窗 / 通话中面板（任意会话可接听） */}
+      <CallOverlay />
     </div>
   )
 }

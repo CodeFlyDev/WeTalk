@@ -1,12 +1,12 @@
 import { Client, type IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
-import type { MessageView, NotifyPayload, SendResult } from '@/types/api'
+import type { MessageView, NotifyPayload, SendResult, VoipSignal } from '@/types/api'
 
 export type WsStatus = 'connecting' | 'open' | 'closed'
 
 /**
  * STOMP 连接管理：SockJS 传输 + 自动重连 + /app/heartbeat 在线续期。
- * 对齐后端：握手 ?token=JWT；订阅 /user/queue/{messages,ack,notify}。
+ * 对齐后端：握手 ?token=JWT；订阅 /user/queue/{messages,ack,notify,voip}。
  */
 class SocketManager {
   private client: Client | null = null
@@ -18,6 +18,7 @@ class SocketManager {
   onMessage: ((view: MessageView) => void) | null = null
   onAck: ((ack: SendResult) => void) | null = null
   onNotify: ((payload: NotifyPayload) => void) | null = null
+  onVoip: ((signal: VoipSignal) => void) | null = null
 
   connect(accessToken: string) {
     if (this.client && this.accessToken === accessToken) return
@@ -77,6 +78,20 @@ class SocketManager {
         // ignore
       }
     })
+    this.client.subscribe('/user/queue/voip', (msg: IMessage) => {
+      try {
+        this.onVoip?.(JSON.parse(msg.body) as VoipSignal)
+      } catch {
+        // ignore
+      }
+    })
+  }
+
+  /** 通话信令发送：/app/voip.signal（服务端补 fromUserId 后转发对端） */
+  sendVoip(signal: VoipSignal) {
+    if (this.client?.connected) {
+      this.client.publish({ destination: '/app/voip.signal', body: JSON.stringify(signal) })
+    }
   }
 
   /** 定期心跳续期在线状态（对齐后端 PresenceService） */

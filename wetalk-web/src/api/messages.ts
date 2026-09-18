@@ -19,5 +19,13 @@ export const messageApi = {
   },
   clearUnread(conversationId: string) {
     return unwrap<void>(http.post('/messages/unread/clear', null, { params: { conversationId } }))
+  },
+  /** 按 ID 查询单条消息（引用条回显） */
+  getById(id: string) {
+    return unwrap<MessageView>(http.get(`/messages/${id}`))
+  },
+  /** 撤回自己发送的消息（2 分钟内） */
+  recall(id: string) {
+    return unwrap<MessageView>(http.post(`/messages/${id}/recall`))
   }
 }

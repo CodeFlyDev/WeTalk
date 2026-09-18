@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 消息历史（MongoDB，时间序列；ES 全文检索由后续同步任务承接）
@@ -38,6 +39,17 @@ public class MessageDoc {
 
     /** 客户端幂等 ID */
     private String clientMsgId;
+
+    /** 引用回复的原消息 ID（同会话内） */
+    private String replyToId;
+
+    /** 群聊 @ 提及的用户 ID 列表 */
+    private List<Long> mentionedUserIds;
+
+    /** 是否已撤回（软标记，历史补拉保留占位） */
+    private boolean recalled;
+
+    private LocalDateTime recalledAt;
 
     private LocalDateTime createdAt;
 
@@ -111,6 +123,38 @@ public class MessageDoc {
 
     public void setClientMsgId(String clientMsgId) {
         this.clientMsgId = clientMsgId;
+    }
+
+    public String getReplyToId() {
+        return replyToId;
+    }
+
+    public void setReplyToId(String replyToId) {
+        this.replyToId = replyToId;
+    }
+
+    public List<Long> getMentionedUserIds() {
+        return mentionedUserIds;
+    }
+
+    public void setMentionedUserIds(List<Long> mentionedUserIds) {
+        this.mentionedUserIds = mentionedUserIds;
+    }
+
+    public boolean isRecalled() {
+        return recalled;
+    }
+
+    public void setRecalled(boolean recalled) {
+        this.recalled = recalled;
+    }
+
+    public LocalDateTime getRecalledAt() {
+        return recalledAt;
+    }
+
+    public void setRecalledAt(LocalDateTime recalledAt) {
+        this.recalledAt = recalledAt;
     }
 
     public LocalDateTime getCreatedAt() {

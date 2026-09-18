@@ -30,6 +30,12 @@ export interface Conversation {
 /** 本地消息：带发送状态 */
 export type LocalMessage = MessageView & { pending?: boolean; failed?: boolean }
 
+/** 发送附加项：引用回复 / @提及 */
+export interface SendOptions {
+  replyToId?: string | null
+  mentionedUserIds?: number[] | null
+}
+
 interface ChatState {
   friends: UserView[]
   friendById: Record<number, UserView>
@@ -39,6 +45,8 @@ interface ChatState {
   messages: Record<string, LocalMessage[]>
   unread: Record<string, number>
   activeId: string | null
+  /** 正在引用回复的消息（输入框上方展示，发送后清除） */
+  replyTo: LocalMessage | null
   loadingHistory: boolean
   initialized: boolean
 
@@ -46,8 +54,10 @@ interface ChatState {
   openConversation: (id: string) => Promise<void>
   loadMore: (id: string) => Promise<void>
   setActive: (id: string | null) => void
-  sendText: (target: ConversationTarget, content: string) => Promise<void>
-  sendFile: (target: ConversationTarget, file: File, type: MessageType) => Promise<void>
+  sendText: (target: ConversationTarget, content: string, opts?: SendOptions) => Promise<void>
+  sendFile: (target: ConversationTarget, file: File, type: MessageType, opts?: SendOptions) => Promise<void>
+  recallMessage: (id: string, conversationId: string) => Promise<void>
+  setReplyTo: (m: LocalMessage | null) => void
   handleIncoming: (view: MessageView) => void
   handleNotify: (payload: NotifyPayload) => void
   clearUnread: (id: string) => Promise<void>
@@ -82,6 +92,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: {},
   unread: {},
   activeId: null,
+  replyTo: null,
   loadingHistory: false,
   initialized: false,
 
@@ -153,11 +164,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setActive: (id) => set({ activeId: id }),
 
-  sendText: async (target, content) => {
-    await sendWithRetry(set, get, target, { type: 'TEXT', content })
+  sendText: async (target, content, opts) => {
+    await sendWithRetry(set, get, target, { type: 'TEXT', content, ...opts })
   },
 
-  sendFile: async (target, file, type) => {
+  sendFile: async (target, file, type, opts) => {
     const clientMsgId = newClientMsgId()
     const selfId = useAuthStore.getState().user!.id
     const convId = conversationIdOf(target, selfId)
@@ -170,22 +181,62 @@ export const useChatStore = create<ChatState>((set, get) => ({
       type,
       content: file.name,
       refObjectKey: null,
+      replyToId: opts?.replyToId ?? null,
+      mentionedUserIds: opts?.mentionedUserIds ?? null,
       clientMsgId,
+      recalled: false,
       createdAt: new Date().toISOString(),
       pending: true
     }
     appendMessage(set, convId, placeholder)
     try {
       const presign = await uploadFile(file, clientMsgId)
-      await sendRequest(target, { type, content: file.name, refObjectKey: presign.objectKey, clientMsgId }, set, get)
+      await sendRequest(target, { type, content: file.name, refObjectKey: presign.objectKey, clientMsgId, ...opts }, set, get)
     } catch (err) {
       markFailed(set, convId, clientMsgId)
       toast.error(errorMessage(err))
     }
   },
 
+  recallMessage: async (id, conversationId) => {
+    try {
+      await messageApi.recall(id)
+      set((s) => ({
+        messages: {
+          ...s.messages,
+          [conversationId]: (s.messages[conversationId] ?? []).map((m) =>
+            m.id === id ? { ...m, recalled: true } : m
+          )
+        }
+      }))
+    } catch (err) {
+      toast.error(errorMessage(err))
+    }
+  },
+
+  setReplyTo: (m) => set({ replyTo: m }),
+
   handleIncoming: (view) => {
     const state = get()
+
+    // 撤回事件：id = 被撤回的原消息 ID，原地标记
+    if (view.type === 'RECALL') {
+      set((s) => ({
+        messages: {
+          ...s.messages,
+          [view.conversationId]: (s.messages[view.conversationId] ?? []).map((m) =>
+            m.id === view.id ? { ...m, recalled: true } : m
+          )
+        },
+        conversations: s.conversations.map((c) =>
+          c.id === view.conversationId && c.lastMessage?.id === view.id
+            ? { ...c, lastMessage: { ...c.lastMessage, recalled: true } }
+            : c
+        )
+      }))
+      return
+    }
+
     const exists = state.messages[view.conversationId]?.some(
       (m) => m.id === view.id || (view.clientMsgId && m.clientMsgId === view.clientMsgId)
     )
@@ -313,7 +364,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
 async function sendRequest(
   target: ConversationTarget,
-  body: { type: MessageType; content: string; refObjectKey?: string | null; clientMsgId: string },
+  body: {
+    type: MessageType
+    content: string
+    refObjectKey?: string | null
+    clientMsgId: string
+    replyToId?: string | null
+    mentionedUserIds?: number[] | null
+  },
   set: (fn: (s: ChatState) => Partial<ChatState>) => void,
   get: () => ChatState
 ) {
@@ -344,7 +402,10 @@ async function sendRequest(
       type: body.type,
       content: body.content,
       refObjectKey: body.refObjectKey ?? null,
+      replyToId: body.replyToId ?? null,
+      mentionedUserIds: body.mentionedUserIds ?? null,
       clientMsgId: body.clientMsgId,
+      recalled: false,
       conversationId: convId,
       createdAt: result.createdAt
     })
@@ -358,7 +419,12 @@ async function sendWithRetry(
   set: (fn: (s: ChatState) => Partial<ChatState>) => void,
   get: () => ChatState,
   target: ConversationTarget,
-  body: { type: MessageType; content: string }
+  body: {
+    type: MessageType
+    content: string
+    replyToId?: string | null
+    mentionedUserIds?: number[] | null
+  }
 ) {
   const selfId = useAuthStore.getState().user!.id
   const convId = conversationIdOf(target, selfId)
@@ -372,7 +438,10 @@ async function sendWithRetry(
     type: body.type,
     content: body.content,
     refObjectKey: null,
+    replyToId: body.replyToId ?? null,
+    mentionedUserIds: body.mentionedUserIds ?? null,
     clientMsgId,
+    recalled: false,
     createdAt: new Date().toISOString(),
     pending: true
   }

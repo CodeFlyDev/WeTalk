@@ -1,42 +1,74 @@
 import { useEffect, useState } from 'react'
-import { Check, Download, FileText, Loader2, X } from 'lucide-react'
+import { Check, Download, FileText, Loader2, Reply, Undo2, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { cn, formatTime } from '@/lib/utils'
 import { getFileUrl } from '@/api/files'
-import type { LocalMessage } from '@/store/chat'
+import { messageApi } from '@/api/messages'
+import type { LocalMessage, Conversation } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
+import { useAuthStore } from '@/store/auth'
+import type { MessageView } from '@/types/api'
+
+/** 撤回可操作窗口：与后端 RECALL_WINDOW 对齐 */
+const RECALL_WINDOW_MS = 2 * 60 * 1000
 
 export default function MessageItem({
   message: m,
   isSelf,
-  showSender
+  showSender,
+  conversation
 }: {
   message: LocalMessage
   isSelf: boolean
   showSender: boolean
+  conversation: Conversation
 }) {
-  const senderName = useChatStore((s) =>
-    s.friendById[m.senderId]?.nickname || s.friendById[m.senderId]?.username
-  )
+  const senderName = useSenderName(m.senderId, conversation)
+  const selfId = useAuthStore((s) => s.user?.id)
+  const setReplyTo = useChatStore((s) => s.setReplyTo)
+  const recallMessage = useChatStore((s) => s.recallMessage)
+  const [hovered, setHovered] = useState(false)
+
+  // 已撤回：占位展示，不再渲染气泡
+  if (m.recalled || m.type === 'RECALL') {
+    return (
+      <div className={cn('flex gap-2', isSelf ? 'justify-end' : 'justify-start')}>
+        {!isSelf && <Avatar name={senderName} size={32} />}
+        <div className="flex flex-col items-start">
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs italic text-muted-foreground">
+            {senderName} 撤回了一条消息
+          </span>
+        </div>
+        {isSelf && <Avatar name="我" size={32} />}
+      </div>
+    )
+  }
+
+  const canRecall =
+    isSelf && !m.pending && !m.failed && Date.now() - new Date(m.createdAt).getTime() < RECALL_WINDOW_MS
 
   return (
-    <div className={cn('flex gap-2', isSelf ? 'justify-end' : 'justify-start')}>
-      {!isSelf && <Avatar name={senderName ?? `用户${m.senderId}`} size={32} />}
+    <div
+      className={cn('group relative flex gap-2', isSelf ? 'justify-end' : 'justify-start')}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {!isSelf && <Avatar name={senderName} size={32} />}
       <div className={cn('max-w-[68%] flex flex-col', isSelf ? 'items-end' : 'items-start')}>
         {showSender && !isSelf && (
-          <span className="mb-0.5 px-1 text-[11px] text-muted-foreground">
-            {senderName ?? `用户 ${m.senderId}`}
-          </span>
+          <span className="mb-0.5 px-1 text-[11px] text-muted-foreground">{senderName}</span>
         )}
         <div
           className={cn(
             'rounded-2xl px-3 py-1.5 text-sm leading-relaxed break-words',
             isSelf
               ? 'rounded-br-sm bg-bubble-self'
-              : 'rounded-bl-sm bg-bubble-other text-foreground'
+              : 'rounded-bl-sm bg-bubble-other text-foreground',
+            mentionedMe(m, selfId) && 'ring-1 ring-amber-400/60'
           )}
         >
-          <MessageBody message={m} />
+          <ReplyQuote replyToId={m.replyToId} conversation={conversation} />
+          <MessageBody message={m} conversation={conversation} />
         </div>
         <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
           {isSelf && <SendStatus message={m} />}
@@ -44,9 +76,142 @@ export default function MessageItem({
         </div>
       </div>
       {isSelf && <Avatar name="我" size={32} />}
+
+      {/* 悬停操作：回复 / 撤回 */}
+      {hovered && (
+        <div
+          className={cn(
+            'absolute top-0 z-10 flex items-center gap-0.5 rounded-full border bg-popover p-0.5 shadow-sm',
+            isSelf ? 'right-full mr-2' : 'left-full ml-2'
+          )}
+        >
+          <button
+            title="回复"
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            onClick={() => setReplyTo(m)}
+          >
+            <Reply className="h-3.5 w-3.5" />
+          </button>
+          {canRecall && (
+            <button
+              title="撤回"
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => void recallMessage(m.id, m.conversationId)}
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+
+/* ---------- 名称解析 ---------- */
+
+function useSenderName(senderId: number, conversation: Conversation): string {
+  const friend = useChatStore((s) => s.friendById[senderId])
+  const groups = useChatStore((s) => s.groups)
+  const self = useAuthStore((s) => s.user)
+  if (senderId === self?.id) return '我'
+  if (conversation.type === 'group' && conversation.groupId != null) {
+    const member = groups
+      .find((g) => g.id === conversation.groupId)
+      ?.members?.find((mm) => mm.userId === senderId)
+    if (member) return member.nickname || member.username
+  }
+  return friend?.nickname || friend?.username || `用户 ${senderId}`
+}
+
+/** 群成员名集合（含自己），用于 @ 高亮匹配 */
+function useMemberNames(conversation: Conversation): string[] {
+  const groups = useChatStore((s) => s.groups)
+  const self = useAuthStore((s) => s.user)
+  if (conversation.type !== 'group' || conversation.groupId == null) return []
+  const group = groups.find((g) => g.id === conversation.groupId)
+  const names: string[] = []
+  if (self) names.push(self.nickname || self.username)
+  for (const mm of group?.members ?? []) names.push(mm.nickname || mm.username)
+  return [...new Set(names.filter(Boolean))]
+}
+
+/** @ 提及是否命中当前登录用户 */
+function mentionedMe(m: MessageView, selfId: number | undefined): boolean {
+  return selfId != null && !!m.mentionedUserIds?.includes(selfId)
+}
+
+/* ---------- 引用回复 ---------- */
+
+function ReplyQuote({
+  replyToId,
+  conversation
+}: {
+  replyToId: string | null
+  conversation: Conversation
+}) {
+  const cached = useChatStore((s) =>
+    replyToId ? s.messages[conversation.id]?.find((mm) => mm.id === replyToId) : undefined
+  )
+  const friendById = useChatStore((s) => s.friendById)
+  const [fetched, setFetched] = useState<MessageView | null>(null)
+  const [missed, setMissed] = useState(false)
+
+  useEffect(() => {
+    if (!replyToId || cached) return
+    let cancelled = false
+    messageApi
+      .getById(replyToId)
+      .then((v) => !cancelled && setFetched(v))
+      .catch(() => !cancelled && setMissed(true))
+    return () => {
+      cancelled = true
+    }
+  }, [replyToId, cached])
+
+  if (!replyToId) return null
+  const origin = cached ?? fetched
+  const senderName = origin
+    ? friendById[origin.senderId]?.nickname ||
+      friendById[origin.senderId]?.username ||
+      `用户 ${origin.senderId}`
+    : ''
+
+  return (
+    <div className="mb-1 rounded-md border-l-2 border-primary/50 bg-background/50 px-2 py-1 text-xs text-muted-foreground">
+      {origin ? (
+        <>
+          <span className="font-medium text-foreground">{senderName}</span>
+          <span className="mx-1">:</span>
+          <span className="line-clamp-1">{previewOf(origin)}</span>
+        </>
+      ) : missed ? (
+        <span className="italic">原消息不可见</span>
+      ) : (
+        <span className="italic">加载引用内容…</span>
+      )}
+    </div>
+  )
+}
+
+/** 会话列表 / 引用条 / 通知共用的消息摘要 */
+export function previewOf(m: MessageView): string {
+  switch (m.type) {
+    case 'IMAGE':
+      return '[图片]'
+    case 'FILE':
+      return `[文件] ${m.content}`
+    case 'VOICE':
+      return '[语音]'
+    case 'VIDEO':
+      return '[视频]'
+    case 'EMOJI':
+      return m.content
+    default:
+      return m.content
+  }
+}
+
+/* ---------- 气泡主体 ---------- */
 
 function SendStatus({ message }: { message: LocalMessage }) {
   if (message.pending) return <Loader2 className="h-3 w-3 animate-spin" />
@@ -54,14 +219,45 @@ function SendStatus({ message }: { message: LocalMessage }) {
   return <Check className="h-3 w-3 text-emerald-500" />
 }
 
-function MessageBody({ message: m }: { message: LocalMessage }) {
+function MessageBody({ message: m, conversation }: { message: LocalMessage; conversation: Conversation }) {
+  const memberNames = useMemberNames(conversation)
   if (m.type === 'IMAGE' && m.refObjectKey) {
     return <ImageMessage objectKey={m.refObjectKey} alt={m.content} />
   }
   if ((m.type === 'FILE' || m.type === 'VOICE' || m.type === 'VIDEO') && m.refObjectKey) {
     return <FileMessage name={m.content} objectKey={m.refObjectKey} />
   }
-  return <span className="whitespace-pre-wrap">{m.content}</span>
+  return <TextWithMentions content={m.content} names={memberNames} />
+}
+
+/** 文本渲染：@成员名 高亮 */
+function TextWithMentions({ content, names }: { content: string; names: string[] }) {
+  const selfName = useAuthStore((s) => s.user)
+  if (!content.includes('@') || names.length === 0) {
+    return <span className="whitespace-pre-wrap">{content}</span>
+  }
+  const escaped = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`@(${escaped.join('|')})(?=\\s|$)`, 'g')
+  const myName = selfName?.nickname || selfName?.username
+
+  const parts: React.ReactNode[] = []
+  let last = 0
+  for (const match of content.matchAll(regex)) {
+    const start = match.index ?? 0
+    if (start > last) parts.push(content.slice(last, start))
+    const isMe = match[1] === myName
+    parts.push(
+      <span
+        key={start}
+        className={cn('font-medium', isMe ? 'rounded bg-amber-400/30 px-0.5 text-amber-600 dark:text-amber-400' : 'text-primary')}
+      >
+        {match[0]}
+      </span>
+    )
+    last = start + match[0].length
+  }
+  if (last < content.length) parts.push(content.slice(last))
+  return <span className="whitespace-pre-wrap">{parts}</span>
 }
 
 function ImageMessage({ objectKey, alt }: { objectKey: string; alt: string }) {

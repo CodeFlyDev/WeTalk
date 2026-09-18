@@ -8,6 +8,7 @@ import com.wetalk.message.dto.SendResult;
 import com.wetalk.message.service.MessageService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +39,18 @@ public class MessageController {
     @PostMapping
     public ApiResult<SendResult> send(@Valid @RequestBody SendMessageRequest request) {
         return ApiResult.ok(messageService.send(CurrentUser.id(), request));
+    }
+
+    /** 按 ID 查询单条消息（引用条回显） */
+    @GetMapping("/{id}")
+    public ApiResult<MessageView> get(@PathVariable String id) {
+        return ApiResult.ok(messageService.get(CurrentUser.id(), id));
+    }
+
+    /** 撤回自己发送的消息（2 分钟内） */
+    @PostMapping("/{id}/recall")
+    public ApiResult<MessageView> recall(@PathVariable String id) {
+        return ApiResult.ok(messageService.recall(CurrentUser.id(), id));
     }
 
     @GetMapping("/history")

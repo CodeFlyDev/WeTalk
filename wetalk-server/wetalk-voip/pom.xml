@@ -11,12 +11,22 @@
 
     <artifactId>wetalk-voip</artifactId>
     <name>wetalk-voip</name>
-    <description>音视频信令（WebRTC / Mediasoup）</description>
+    <description>音视频信令（WebRTC 一对一，STOMP 通道转发；Mediasoup SFU 后续接入）</description>
 
     <dependencies>
         <dependency>
             <groupId>com.wetalk</groupId>
             <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- 复用 message 模块的在在线表（PresenceService）与好友防腐接口（FriendPort） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
     </dependencies>
 </project>

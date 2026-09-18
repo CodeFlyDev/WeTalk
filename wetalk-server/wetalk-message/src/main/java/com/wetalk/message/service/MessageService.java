@@ -31,6 +31,9 @@ public class MessageService {
             MessageType.TEXT, MessageType.IMAGE, MessageType.FILE, MessageType.VOICE,
             MessageType.VIDEO, MessageType.EMOJI, MessageType.LOCATION, MessageType.CARD);
 
+    /** 撤回时间窗：发送后 2 分钟内可撤回 */
+    private static final java.time.Duration RECALL_WINDOW = java.time.Duration.ofMinutes(2);
+
     private final MessageRepository messageRepository;
     private final UserService userService;
     private final FriendPort friendPort;
@@ -61,6 +64,8 @@ public class MessageService {
         doc.setContent(request.content());
         doc.setRefObjectKey(request.refObjectKey());
         doc.setClientMsgId(request.clientMsgId());
+        doc.setReplyToId(request.replyToId());
+        doc.setMentionedUserIds(request.mentionedUserIds() == null ? List.of() : request.mentionedUserIds());
         doc.setCreatedAt(LocalDateTime.now());
 
         List<Long> recipients;
@@ -95,9 +100,61 @@ public class MessageService {
             }
         }
 
+        // 引用校验：原消息必须存在且属于同一会话
+        if (request.replyToId() != null && !request.replyToId().isBlank()) {
+            MessageDoc origin = messageRepository.findById(request.replyToId())
+                    .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "引用的原消息不存在"));
+            if (!origin.getConversationId().equals(doc.getConversationId())) {
+                throw new BizException(ErrorCode.BAD_REQUEST, "只能引用同一会话内的消息");
+            }
+        }
+
         messageRepository.save(doc);
         deliveryService.deliver(doc, recipients);
         return toResult(doc);
+    }
+
+    /**
+     * 撤回：仅发送者本人、2 分钟内、未撤回过。
+     * 成功后向在线接收方推送 RECALL 事件（离线方补拉历史时看到 recalled=true 占位）。
+     */
+    public MessageView recall(Long userId, String messageId) {
+        MessageDoc doc = messageRepository.findById(messageId)
+                .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "消息不存在"));
+        if (!doc.getSenderId().equals(userId)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "只能撤回自己发送的消息");
+        }
+        if (doc.isRecalled()) {
+            throw new BizException(ErrorCode.BIZ_ERROR, "消息已撤回");
+        }
+        if (doc.getCreatedAt().isBefore(LocalDateTime.now().minus(RECALL_WINDOW))) {
+            throw new BizException(ErrorCode.BIZ_ERROR, "超过可撤回时间（2 分钟）");
+        }
+        doc.setRecalled(true);
+        doc.setRecalledAt(LocalDateTime.now());
+        messageRepository.save(doc);
+
+        List<Long> recipients = doc.getGroupId() != null
+                ? groupPort.memberIds(doc.getGroupId()).stream().filter(id -> !id.equals(userId)).toList()
+                : List.of(doc.getReceiverId());
+        deliveryService.deliverRecall(MessageDeliveryService.toView(doc), recipients);
+        return MessageDeliveryService.toView(doc);
+    }
+
+    /** 按 ID 查询单条消息（引用条回显），校验请求者是会话参与者 */
+    public MessageView get(Long userId, String messageId) {
+        MessageDoc doc = messageRepository.findById(messageId)
+                .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "消息不存在"));
+        boolean participant;
+        if (doc.getGroupId() != null) {
+            participant = groupPort.isMember(doc.getGroupId(), userId);
+        } else {
+            participant = doc.getSenderId().equals(userId) || userId.equals(doc.getReceiverId());
+        }
+        if (!participant) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该消息");
+        }
+        return MessageDeliveryService.toView(doc);
     }
 
     /** 离线补拉：按会话向前翻页（返回升序） */

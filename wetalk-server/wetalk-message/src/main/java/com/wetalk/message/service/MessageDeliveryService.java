@@ -60,6 +60,23 @@ public class MessageDeliveryService {
         }
     }
 
+    /**
+     * 撤回事件推送：只推在线用户（不产生未读计数），离线用户补拉历史时看到 recalled 占位。
+     * view.id 为被撤回的原消息 ID。
+     */
+    public void deliverRecall(MessageView view, List<Long> recipients) {
+        for (Long receiverId : recipients) {
+            if (receiverId == null || !presenceService.isOnline(receiverId)) {
+                continue;
+            }
+            try {
+                messagingTemplate.convertAndSendToUser(String.valueOf(receiverId), QUEUE_MESSAGES, view);
+            } catch (Exception e) {
+                log.warn("recall push failed, messageId={}, receiver={}", view.id(), receiverId, e);
+            }
+        }
+    }
+
     private void deliverOffline(MessageDoc doc, Long receiverId) {
         unreadService.increment(doc.getConversationId(), receiverId);
         offlineEventPublisher.publish(doc, receiverId);
@@ -68,6 +85,7 @@ public class MessageDeliveryService {
     public static MessageView toView(MessageDoc doc) {
         return new MessageView(doc.getId(), doc.getConversationId(), doc.getSenderId(),
                 doc.getReceiverId(), doc.getGroupId(), doc.getType(), doc.getContent(),
-                doc.getRefObjectKey(), doc.getClientMsgId(), doc.getCreatedAt());
+                doc.getRefObjectKey(), doc.getReplyToId(), doc.getMentionedUserIds(),
+                doc.getClientMsgId(), doc.isRecalled(), doc.getCreatedAt());
     }
 }

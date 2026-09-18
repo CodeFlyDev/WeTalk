@@ -29,6 +29,7 @@ export type MessageType =
   | 'EMOJI'
   | 'LOCATION'
   | 'CARD'
+  | 'RECALL'
 
 export interface SendMessageRequest {
   receiverId?: number | null
@@ -37,6 +38,10 @@ export interface SendMessageRequest {
   content: string
   refObjectKey?: string | null
   clientMsgId?: string | null
+  /** 引用回复的原消息 ID */
+  replyToId?: string | null
+  /** 群聊 @ 提及的用户 ID */
+  mentionedUserIds?: number[] | null
 }
 
 export interface MessageView {
@@ -48,7 +53,10 @@ export interface MessageView {
   type: MessageType
   content: string
   refObjectKey: string | null
+  replyToId: string | null
+  mentionedUserIds: number[] | null
   clientMsgId: string | null
+  recalled: boolean
   createdAt: string
 }
 
@@ -96,4 +104,32 @@ export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED'
 export interface NotifyPayload {
   event: NotifyEvent
   data: unknown
+}
+
+/* ---------- 音视频信令（对齐 wetalk-voip dto） ---------- */
+
+export type VoipEvent =
+  | 'INVITE'
+  | 'ACCEPT'
+  | 'REJECT'
+  | 'CANCEL'
+  | 'BUSY'
+  | 'OFFLINE'
+  | 'OFFER'
+  | 'ANSWER'
+  | 'ICE'
+  | 'END'
+  | 'ERROR'
+
+export type CallMedia = 'AUDIO' | 'VIDEO'
+
+/** /user/queue/voip 与 /app/voip.signal 载荷；fromUserId = 信令来源（服务端盖章） */
+export interface VoipSignal {
+  peerId: number
+  callId: string
+  event: VoipEvent
+  media?: CallMedia | null
+  /** SDP / ICE 候选 JSON / 文本原因 */
+  payload?: string | null
+  fromUserId?: number | null
 }

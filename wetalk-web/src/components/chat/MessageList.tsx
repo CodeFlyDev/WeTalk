@@ -68,6 +68,7 @@ export default function MessageList({ conversation }: { conversation: Conversati
             message={m}
             isSelf={m.senderId === selfId}
             showSender={conversation.type === 'group'}
+            conversation={conversation}
           />
         ))}
       </div>
