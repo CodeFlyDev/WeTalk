@@ -1,0 +1,36 @@
+# Web 前端 CI/CD：构建 + 产物归档
+# 部署方式由运维侧决定（Nginx 静态托管 / K8s Ingress），产物在 Actions Artifacts
+name: Web CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["wetalk-web/**", ".github/workflows/web-cd.yml"]
+  pull_request:
+    paths: ["wetalk-web/**", ".github/workflows/web-cd.yml"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # 提交 package-lock.json 后可启用缓存并改用 npm ci
+          # cache: npm
+          # cache-dependency-path: wetalk-web/package-lock.json
+
+      - name: Install
+        working-directory: wetalk-web
+        run: npm install
+
+      - name: Build
+        working-directory: wetalk-web
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wetalk-web-dist
+          path: wetalk-web/dist

@@ -38,6 +38,8 @@
         <java.version>21</java.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jjwt.version>0.12.6</jjwt.version>
+        <minio.version>8.5.12</minio.version>
     </properties>
 
     <dependencyManagement>
@@ -48,7 +50,56 @@
                 <artifactId>wetalk-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- 后续按需在此登记 gRPC / Spring Cloud / Spring AI BOM（Phase 2-8） -->
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-user</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-auth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-message</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-friend</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-group</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- JWT（本地认证，Phase 2；Keycloak SSO 在 P3 开放平台阶段接入） -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- 对象存储（presigned URL 直传） -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+            <!-- 后续按需在此登记 gRPC / Spring Cloud / Spring AI BOM（Phase 3-8） -->
         </dependencies>
     </dependencyManagement>
 </project>
