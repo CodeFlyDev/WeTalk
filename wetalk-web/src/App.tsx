@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { toast } from 'sonner'
 import LoginPage from '@/pages/LoginPage'
 import ChatPage from '@/pages/ChatPage'
 import MomentsPage from '@/pages/MomentsPage'
@@ -7,6 +8,7 @@ import ChannelsPage from '@/pages/ChannelsPage'
 import VoiceRoomsPage from '@/pages/VoiceRoomsPage'
 import StatsPage from '@/pages/StatsPage'
 import { useAuthStore } from '@/store/auth'
+import { checkForUpdate } from '@/lib/desktop'
 
 export default function App() {
   const bootstrapped = useAuthStore((s) => s.bootstrapped)
@@ -20,6 +22,18 @@ export default function App() {
     window.addEventListener('wetalk:unauthorized', onUnauthorized)
     return () => window.removeEventListener('wetalk:unauthorized', onUnauthorized)
   }, [bootstrap])
+
+  // 桌面端登录后静默检查更新（Web 端 no-op），点击 toast 下载安装并重启
+  useEffect(() => {
+    if (!user) return
+    void checkForUpdate().then((upd) => {
+      if (!upd) return
+      toast.info(`发现新版本 v${upd.version}，是否立即更新？`, {
+        duration: Infinity,
+        action: { label: '更新并重启', onClick: () => void upd.install() }
+      })
+    })
+  }, [user])
 
   if (!bootstrapped) {
     return (

@@ -10,6 +10,15 @@ interface TauriGlobal {
     /** asset 协议：本地路径 → 可 fetch 的 http(s) URL（tauri.conf.json assetProtocol.scope 约束） */
     convertFileSrc?: (path: string, protocol?: string) => string
   }
+  updater?: { check?: () => Promise<UpdaterUpdate | null> }
+  process?: { relaunch?: () => void }
+}
+
+/** updater 插件返回的可用更新描述（downloadAndInstall 由全局 API 提供） */
+interface UpdaterUpdate {
+  version: string
+  body?: string
+  downloadAndInstall?: (onProgress?: (event: unknown) => void) => Promise<void>
 }
 
 function tauri(): TauriGlobal | undefined {
@@ -81,6 +90,36 @@ export async function fileFromPath(path: string): Promise<File | null> {
     const blob = await res.blob()
     const name = path.split(/[\\/]/).pop() ?? 'file'
     return new File([blob], name, { type: blob.type || 'application/octet-stream' })
+  } catch {
+    return null
+  }
+}
+
+/* ---------- 自动更新（tauri-plugin-updater + process，Phase 4 收尾） ---------- */
+
+export interface DesktopUpdate {
+  version: string
+  /** 下载安装并重启应用（downloadAndInstall 完成后 relaunch） */
+  install: () => Promise<void>
+}
+
+/**
+ * 检查桌面端更新（updater 端点/密钥见 tauri.conf.json plugins.updater）。
+ * Web 端、无更新或端点不可达（dev 环境/未配签名密钥）返回 null。
+ */
+export async function checkForUpdate(): Promise<DesktopUpdate | null> {
+  if (!isTauri()) return null
+  try {
+    const update = await tauri()?.updater?.check?.()
+    if (!update) return null
+    const g = tauri()
+    return {
+      version: update.version,
+      install: async () => {
+        await update.downloadAndInstall?.()
+        g?.process?.relaunch?.()
+      }
+    }
   } catch {
     return null
   }

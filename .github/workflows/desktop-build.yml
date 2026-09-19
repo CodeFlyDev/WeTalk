@@ -45,6 +45,12 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 更新签名（Phase 4 自动更新）：Repo Secrets 配置私钥后 tauri-action 自动产出
+          # *.sig 签名文件 + latest.json 并随 Release 上传（updater endpoint 即指向该 latest.json）。
+          # 私钥生成：npx @tauri-apps/cli signer generate -w ~/.tauri/wetalk.key
+          # 公钥回填 tauri.conf.json plugins.updater.pubkey
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: wetalk-desktop
           args: --bundles ${{ matrix.bundles }}
