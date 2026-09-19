@@ -104,6 +104,7 @@ public class MessageDeliveryService {
                 doc.getReceiverId(), doc.getGroupId(), doc.getType(), doc.getContent(),
                 doc.getRefObjectKey(), doc.getReplyToId(), doc.getMentionedUserIds(),
                 doc.getClientMsgId(), doc.isRecalled(), doc.getCreatedAt(),
-                doc.isPinned(), doc.getPinnedBy(), doc.getPinnedAt());
+                doc.isPinned(), doc.getPinnedBy(), doc.getPinnedAt(),
+                doc.isBurnAfterReading(), doc.isBurned());
     }
 }

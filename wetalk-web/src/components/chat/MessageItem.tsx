@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Check, Download, FileText, Forward, Loader2, Pause, Pin, PinOff, Play, Reply, Undo2, X } from 'lucide-react'
+import { Check, Download, FileText, Flame, Forward, Loader2, Pause, Pin, PinOff, Play, Reply, Star, Undo2, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { cn, errorMessage, formatTime } from '@/lib/utils'
+import { decrypt, isEncrypted } from '@/lib/e2ee'
 import { getFileUrl } from '@/api/files'
 import { messageApi } from '@/api/messages'
 import { aiApi } from '@/api/ai'
+import { favoriteApi } from '@/api/favorites'
 import RedPacketCard from './RedPacketCard'
 import ForwardDialog from './ForwardDialog'
 import type { LocalMessage, Conversation } from '@/store/chat'
@@ -50,6 +52,19 @@ export default function MessageItem({
     )
   }
 
+  // 已焚毁：占位展示
+  if (m.burned) {
+    return (
+      <div className={cn('flex gap-2', isSelf ? 'justify-end' : 'justify-start')}>
+        {!isSelf && <Avatar name={senderName} size={32} />}
+        <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs italic text-muted-foreground">
+          <Flame className="h-3 w-3 text-orange-500" /> 消息已焚毁
+        </span>
+        {isSelf && <Avatar name="我" size={32} />}
+      </div>
+    )
+  }
+
   const canRecall =
     isSelf && !m.pending && !m.failed && Date.now() - new Date(m.createdAt).getTime() < RECALL_WINDOW_MS
 
@@ -79,6 +94,10 @@ export default function MessageItem({
         <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
           {isSelf && <SendStatus message={m} />}
           {m.pinned && <Pin className="h-3 w-3 text-amber-500" />}
+          {m.burnAfterReading && <Flame className="h-3 w-3 text-orange-500" />}
+          {!isSelf && m.burnAfterReading && !m.pending && (
+            <BurnCountdown messageId={m.id} />
+          )}
           <span>{formatTime(m.createdAt)}</span>
         </div>
       </div>
@@ -106,6 +125,20 @@ export default function MessageItem({
               onClick={() => void togglePin(m)}
             >
               {m.pinned ? <PinOff className="h-3.5 w-3.5 text-amber-500" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          {!m.pending && !m.failed && (
+            <button
+              title="收藏"
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() =>
+                favoriteApi
+                  .add(m.id)
+                  .then(() => toast.success('已收藏'))
+                  .catch((err) => toast.error(errorMessage(err)))
+              }
+            >
+              <Star className="h-3.5 w-3.5" />
             </button>
           )}
           {!m.pending && !m.failed && (
@@ -226,6 +259,8 @@ function ReplyQuote({
 
 /** 会话列表 / 引用条 / 通知共用的消息摘要 */
 export function previewOf(m: MessageView): string {
+  if (m.burned) return '🔥 消息已焚毁'
+  if (isEncrypted(m.content)) return '🔒 加密消息'
   switch (m.type) {
     case 'IMAGE':
       return '[图片]'
@@ -238,10 +273,28 @@ export function previewOf(m: MessageView): string {
     case 'RED_PACKET':
       return '[红包]'
     case 'EMOJI':
-      return m.content
+      return m.refObjectKey ? '[表情包]' : m.content
     default:
       return m.content
   }
+}
+
+/** 阅后即焚倒计时（接收方视角）：10s 后触发焚毁 */
+function BurnCountdown({ messageId }: { messageId: string }) {
+  const [left, setLeft] = useState(10)
+  useEffect(() => {
+    if (left <= 0) return
+    const timer = setTimeout(() => setLeft((v) => v - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [left])
+  useEffect(() => {
+    if (left === 0) void messageApi.burn(messageId).catch(() => undefined)
+  }, [left, messageId])
+  return (
+    <span className="flex items-center gap-0.5 text-orange-500">
+      <Flame className="h-3 w-3" /> {left}s
+    </span>
+  )
 }
 
 /* ---------- 气泡主体 ---------- */
@@ -257,6 +310,9 @@ function MessageBody({ message: m, conversation }: { message: LocalMessage; conv
   if (m.type === 'IMAGE' && m.refObjectKey) {
     return <ImageMessage objectKey={m.refObjectKey} alt={m.content} />
   }
+  if (m.type === 'EMOJI' && m.refObjectKey) {
+    return <ImageMessage objectKey={m.refObjectKey} alt="表情包" big />
+  }
   if (m.type === 'VOICE' && m.refObjectKey) {
     return <VoiceMessage objectKey={m.refObjectKey} seconds={Number(m.content) || 0} messageId={m.id} />
   }
@@ -269,7 +325,28 @@ function MessageBody({ message: m, conversation }: { message: LocalMessage; conv
   if (m.type === 'RED_PACKET' && m.content) {
     return <RedPacketCard redPacketId={m.content} />
   }
+  // e2e: 密文（单聊端到端加密）→ 异步解密后渲染
+  if (isEncrypted(m.content)) {
+    return <EncryptedText content={m.content} peerId={conversation.peerId ?? m.senderId} names={memberNames} />
+  }
   return <TextWithMentions content={m.content} names={memberNames} />
+}
+
+/** e2e: 密文解密渲染（解密中先显示占位，失败显示占位文本） */
+function EncryptedText({ content, peerId, names }: { content: string; peerId: number; names: string[] }) {
+  const [plain, setPlain] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void decrypt(peerId, content).then((t) => !cancelled && setPlain(t))
+    return () => {
+      cancelled = true
+    }
+  }, [content, peerId])
+
+  if (plain === null) {
+    return <span className="italic text-muted-foreground">🔒 加密消息</span>
+  }
+  return <TextWithMentions content={plain} names={names} />
 }
 
 /** 视频消息：content 存时长秒数，<video> 内联播放 */
@@ -409,7 +486,7 @@ function TextWithMentions({ content, names }: { content: string; names: string[]
   return <span className="whitespace-pre-wrap">{parts}</span>
 }
 
-function ImageMessage({ objectKey, alt }: { objectKey: string; alt: string }) {
+function ImageMessage({ objectKey, alt, big }: { objectKey: string; alt: string; big?: boolean }) {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     void getFileUrl(objectKey).then(setUrl).catch(() => setUrl(null))
@@ -428,7 +505,7 @@ function ImageMessage({ objectKey, alt }: { objectKey: string; alt: string }) {
         src={url}
         alt={alt}
         loading="lazy"
-        className="max-h-64 max-w-xs rounded-lg object-cover"
+        className={big ? 'max-h-40 max-w-52 rounded-lg object-cover' : 'max-h-64 max-w-xs rounded-lg object-cover'}
       />
     </a>
   )

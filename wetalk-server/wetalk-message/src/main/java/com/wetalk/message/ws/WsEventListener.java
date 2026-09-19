@@ -3,9 +3,11 @@ package com.wetalk.message.ws;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
 import com.wetalk.message.dto.TypingRequest;
+import com.wetalk.message.dto.WhiteboardRequest;
 import com.wetalk.message.presence.PresenceService;
 import com.wetalk.message.service.MessageService;
 import com.wetalk.message.service.TypingService;
+import com.wetalk.message.service.WhiteboardService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -26,12 +28,14 @@ public class WsEventListener {
     private final PresenceService presenceService;
     private final MessageService messageService;
     private final TypingService typingService;
+    private final WhiteboardService whiteboardService;
 
     public WsEventListener(PresenceService presenceService, MessageService messageService,
-                           TypingService typingService) {
+                           TypingService typingService, WhiteboardService whiteboardService) {
         this.presenceService = presenceService;
         this.messageService = messageService;
         this.typingService = typingService;
+        this.whiteboardService = whiteboardService;
     }
 
     @EventListener
@@ -68,6 +72,12 @@ public class WsEventListener {
     @MessageMapping("/typing")
     public void typing(TypingRequest request, Principal principal) {
         parseUserId(principal).ifPresent(userId -> typingService.typing(userId, request.conversationId()));
+    }
+
+    /** 协作白板笔画上报：持久化 + 推 WHITEBOARD notify 给会话其他在线成员 */
+    @MessageMapping("/whiteboard")
+    public void whiteboard(WhiteboardRequest request, Principal principal) {
+        parseUserId(principal).ifPresent(userId -> whiteboardService.apply(userId, request));
     }
 
     private Long userId(org.springframework.context.ApplicationEvent event) {

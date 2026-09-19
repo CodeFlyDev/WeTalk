@@ -31,6 +31,7 @@ volumes:
   keycloak-data:
   rocketmq-broker-data:
   rocketmq-broker-logs:
+  ollama-data:
 
 services:
   mysql:
@@ -145,6 +146,21 @@ services:
       WHISPER__MODEL: ${WHISPER_MODEL:Systran/faster-whisper-small}
     ports:
       - "8001:8000"
+    networks: [wetalk-net]
+
+  # 本地 LLM（AI 助手 / 聊天摘要）：首次使用需手动拉模型
+  #   docker compose exec ollama ollama pull qwen2.5:1.5b
+  # GPU 机器可追加 deploy.resources.reservations.devices（nvidia）或换 ollama/ollama:rocm
+  ollama:
+    image: ollama/ollama:latest
+    container_name: wetalk-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_MODEL: ${OLLAMA_MODEL:qwen2.5:1.5b}
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
     networks: [wetalk-net]
 
   # RocketMQ（红包事务消息）：namesrv 9876 + broker 10909/10911
@@ -280,6 +296,7 @@ services:
     profiles: ["app"]
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: "docker"
       MYSQL_URL: "jdbc:mysql://mysql:3306/wetalk?useSSL=false&serverTimezone=Asia/Shanghai"
       MYSQL_USERNAME: "wetalk"
@@ -294,6 +311,10 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       KEYCLOAK_ISSUER: "http://keycloak:8080/realms/wetalk"
+      WHISPER_URL: "http://whisper:8000"
+      OLLAMA_URL: "http://ollama:11434"
+      OLLAMA_MODEL: ${OLLAMA_MODEL:qwen2.5:1.5b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:nomic-embed-text}
     ports:
       - "8080:8080"                     # HTTP / WebSocket
       - "9090:9090"                     # gRPC（服务间）

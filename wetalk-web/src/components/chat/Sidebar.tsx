@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, MessageSquare, Search, Users } from 'lucide-react'
+import { Bot, Images, LogOut, MessageSquare, Search, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn, formatTime } from '@/lib/utils'
@@ -56,6 +56,9 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
             {WS_LABEL[wsStatus]}
           </p>
         </div>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/moments')} title="朋友圈">
+          <Images className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={handleLogout} title="退出登录">
           <LogOut className="h-4 w-4" />
         </Button>
@@ -146,7 +149,13 @@ function ConversationRow({
         active && 'bg-accent'
       )}
     >
-      <Avatar name={conversation.name} size={38} src={conversation.avatarUrl} />
+      {conversation.type === 'ai' ? (
+        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Bot className="h-5 w-5" />
+        </span>
+      ) : (
+        <Avatar name={conversation.name} size={38} src={conversation.avatarUrl} />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <p className="truncate text-sm font-medium">{conversation.name}</p>
@@ -171,12 +180,15 @@ function ConversationRow({
   )
 }
 
-function previewText(msg: { type: string; content: string; recalled?: boolean }) {
+function previewText(msg: { type: string; content: string; recalled?: boolean; burned?: boolean }) {
   if (msg.type === 'RECALL' || msg.recalled) return '消息已撤回'
+  if (msg.burned) return '🔥 消息已焚毁'
+  if (msg.content?.startsWith('e2e:')) return '🔒 加密消息'
   if (msg.type === 'IMAGE') return '[图片]'
   if (msg.type === 'FILE') return `[文件] ${msg.content}`
   if (msg.type === 'VOICE') return '[语音]'
   if (msg.type === 'VIDEO') return '[视频]'
   if (msg.type === 'RED_PACKET') return '[红包]'
+  if (msg.type === 'EMOJI') return '[表情包]'
   return msg.content
 }

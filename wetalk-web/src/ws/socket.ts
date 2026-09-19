@@ -108,6 +108,16 @@ class SocketManager {
     })
   }
 
+  /** 协作白板：/app/whiteboard（STROKE 笔画 / CLEAR 清空） */
+  sendWhiteboard(conversationId: string, event: 'STROKE' | 'CLEAR', data: string | null) {
+    if (this.client?.connected) {
+      this.client.publish({
+        destination: '/app/whiteboard',
+        body: JSON.stringify({ conversationId, event, data })
+      })
+    }
+  }
+
   /** 定期心跳续期在线状态（对齐后端 PresenceService） */
   private startHeartbeat() {
     this.stopHeartbeat()

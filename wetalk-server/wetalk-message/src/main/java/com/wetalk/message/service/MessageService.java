@@ -84,6 +84,7 @@ public class MessageService {
         doc.setClientMsgId(request.clientMsgId());
         doc.setReplyToId(request.replyToId());
         doc.setMentionedUserIds(request.mentionedUserIds() == null ? List.of() : request.mentionedUserIds());
+        doc.setBurnAfterReading(Boolean.TRUE.equals(request.burnAfterRead()));
         doc.setCreatedAt(LocalDateTime.now());
 
         List<Long> recipients;
@@ -159,7 +160,27 @@ public class MessageService {
     }
 
     /**
-     * 置顶 / 取消置顶：会话参与者均可操作（dm 双方 / 群任意成员）。
+     * 阅后即焚：接收方（非发送者）阅读倒计时结束后触发。
+     * 内容与附件引用清空并标记 burned，ES 删档，向会话在线方推送 burned MessageView 原地替换。
+     */
+    public MessageView burn(Long userId, String messageId) {
+        MessageDoc doc = requireParticipantDoc(userId, messageId);
+        if (doc.getSenderId().equals(userId)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "发送者无需焚毁（可用撤回）");
+        }
+        if (doc.isBurned()) {
+            return MessageDeliveryService.toView(doc);
+        }
+        doc.setBurned(true);
+        doc.setContent(null);
+        doc.setRefObjectKey(null);
+        messageRepository.save(doc);
+        searchIndexer.delete(messageId);
+        deliveryService.deliverRecall(MessageDeliveryService.toView(doc), recipientsOf(doc, userId));
+        return MessageDeliveryService.toView(doc);
+    }
+
+    /** 置顶 / 取消置顶：会话参与者均可操作（dm 双方 / 群任意成员）。
      * 成功后向在线接收方推送携带最新 pinned 状态的 MessageView，前端按 id 原地更新。
      */
     public MessageView setPinned(Long userId, String messageId, boolean pinned) {
@@ -202,11 +223,11 @@ public class MessageService {
             if ("group".equals(target.type())) {
                 send = new SendMessageRequest(null, target.targetId(), origin.getType(),
                         origin.getContent(), origin.getRefObjectKey(), "fwd-" + UUID.randomUUID(),
-                        null, null);
+                        null, null, null);
             } else {
                 send = new SendMessageRequest(target.targetId(), null, origin.getType(),
                         origin.getContent(), origin.getRefObjectKey(), "fwd-" + UUID.randomUUID(),
-                        null, null);
+                        null, null, null);
             }
             results.add(sendInternal(userId, send));
         }
@@ -230,6 +251,18 @@ public class MessageService {
     /** 按 ID 查询单条消息（引用条回显），校验请求者是会话参与者 */
     public MessageView get(Long userId, String messageId) {
         return MessageDeliveryService.toView(requireParticipantDoc(userId, messageId));
+    }
+
+    /** 会话最近消息（AI 摘要等跨模块取材用），校验请求者是会话参与者，返回旧→新 */
+    public List<MessageView> recent(Long userId, String conversationId, int limit) {
+        assertParticipant(userId, conversationId);
+        int size = limit <= 0 ? 20 : Math.min(limit, 50);
+        return messageRepository.findTop50ByConversationIdOrderByCreatedAtDesc(conversationId)
+                .stream()
+                .limit(size)
+                .map(MessageDeliveryService::toView)
+                .toList()
+                .reversed();
     }
 
     /** 离线补拉：按会话向前翻页（返回升序） */
@@ -267,8 +300,8 @@ public class MessageService {
         return searchIndexer.searchGlobal(userId, groupPort.myGroupIds(userId), keyword, size);
     }
 
-    /** 会话参与者校验：dm 校验双方，g 校验群成员 */
-    private void assertParticipant(Long userId, String conversationId) {
+    /** 会话参与者校验：dm 校验双方，g 校验群成员（public：AI 摘要等跨模块取材复用） */
+    public void assertParticipant(Long userId, String conversationId) {
         boolean participant;
         if (conversationId.startsWith("g:")) {
             participant = groupPort.isMember(Long.parseLong(conversationId.substring(2)), userId);

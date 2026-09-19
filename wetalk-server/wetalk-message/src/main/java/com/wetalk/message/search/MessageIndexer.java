@@ -106,6 +106,6 @@ public class MessageIndexer {
         return new MessageView(doc.getId(), doc.getConversationId(), doc.getSenderId(),
                 doc.getReceiverId(), doc.getGroupId(), doc.getType(), doc.getContent(),
                 null, null, null, null, false, doc.getCreatedAt(),
-                false, null, null);
+                false, null, null, false, false);
     }
 }

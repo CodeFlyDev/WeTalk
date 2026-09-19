@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, UserPlus, Users, X } from 'lucide-react'
+import { Check, ListTodo, Star, UserPlus, Users, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn, formatTime, ConversationIds } from '@/lib/utils'
@@ -7,11 +7,15 @@ import { useAuthStore } from '@/store/auth'
 import { useChatStore } from '@/store/chat'
 import AddFriendDialog from './AddFriendDialog'
 import CreateGroupDialog from './CreateGroupDialog'
+import FavoritesDialog from '@/components/chat/FavoritesDialog'
+import TodoDialog from '@/components/chat/TodoDialog'
 
-/** 通讯录：好友请求 / 好友列表 / 群列表 + 添加好友 / 创建群 */
+/** 通讯录：好友请求 / 好友列表 / 群列表 + 添加好友 / 创建群 / 我的收藏 */
 export default function ContactsPanel() {
   const [addFriendOpen, setAddFriendOpen] = useState(false)
   const [createGroupOpen, setCreateGroupOpen] = useState(false)
+  const [favoritesOpen, setFavoritesOpen] = useState(false)
+  const [todoOpen, setTodoOpen] = useState(false)
 
   const selfId = useAuthStore((s) => s.user!.id)
   const friends = useChatStore((s) => s.friends)
@@ -32,6 +36,26 @@ export default function ContactsPanel() {
           <Users className="h-4 w-4" /> 创建群聊
         </Button>
       </div>
+
+      {/* 我的收藏 / 我的待办 */}
+      <button
+        className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+        onClick={() => setFavoritesOpen(true)}
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+          <Star className="h-5 w-5" />
+        </span>
+        我的收藏
+      </button>
+      <button
+        className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+        onClick={() => setTodoOpen(true)}
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+          <ListTodo className="h-5 w-5" />
+        </span>
+        我的待办
+      </button>
 
       {/* 好友请求 */}
       {friendRequests.length > 0 && (
@@ -127,6 +151,8 @@ export default function ContactsPanel() {
 
       <AddFriendDialog open={addFriendOpen} onClose={() => setAddFriendOpen(false)} />
       <CreateGroupDialog open={createGroupOpen} onClose={() => setCreateGroupOpen(false)} />
+      <FavoritesDialog open={favoritesOpen} onClose={() => setFavoritesOpen(false)} />
+      <TodoDialog open={todoOpen} onClose={() => setTodoOpen(false)} />
     </div>
   )
 }

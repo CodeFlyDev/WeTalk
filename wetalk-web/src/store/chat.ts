@@ -19,7 +19,7 @@ import type {
 
 export interface Conversation {
   id: string
-  type: 'dm' | 'group'
+  type: 'dm' | 'group' | 'ai'
   peerId?: number
   groupId?: number
   name: string
@@ -27,13 +27,18 @@ export interface Conversation {
   lastMessage?: MessageView
 }
 
+/** AI 助手固定会话（前端本地，消息不落库不进消息链路） */
+export const AI_CONV_ID = 'ai:assistant'
+export const AI_CONVERSATION: Conversation = { id: AI_CONV_ID, type: 'ai', name: 'AI 助手' }
+
 /** 本地消息：带发送状态 */
 export type LocalMessage = MessageView & { pending?: boolean; failed?: boolean }
 
-/** 发送附加项：引用回复 / @提及 */
+/** 发送附加项：引用回复 / @提及 / 阅后即焚 */
 export interface SendOptions {
   replyToId?: string | null
   mentionedUserIds?: number[] | null
+  burnAfterRead?: boolean
 }
 
 interface ChatState {
@@ -142,6 +147,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     )
 
     conversations.sort((a, b) => (b.lastMessage?.createdAt ?? '').localeCompare(a.lastMessage?.createdAt ?? ''))
+    // AI 助手固定会话置顶（不参与排序、无未读）
+    conversations.unshift(AI_CONVERSATION)
 
     set({
       conversations,
@@ -151,6 +158,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   openConversation: async (id) => {
+    // AI 会话：纯前端本地，无历史/未读
+    if (id === AI_CONV_ID) {
+      set({ activeId: id })
+      return
+    }
     set({ activeId: id })
     void get().clearUnread(id)
     if (get().messages[id]?.length) return
@@ -313,6 +325,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
         }))
       }
+      // 阅后即焚焚毁推送 → 原地清空内容（含会话列表摘要）
+      if (view.burned && !existing.burned) {
+        set((s) => ({
+          messages: {
+            ...s.messages,
+            [view.conversationId]: (s.messages[view.conversationId] ?? []).map((m) =>
+              m.id === existing.id ? { ...m, burned: true, content: '', refObjectKey: null } : m
+            )
+          },
+          conversations: s.conversations.map((c) =>
+            c.id === view.conversationId && c.lastMessage?.id === existing.id
+              ? { ...c, lastMessage: { ...c.lastMessage, burned: true, content: '', refObjectKey: null } }
+              : c
+          )
+        }))
+      }
       return
     }
     appendMessage(set, view.conversationId, view)
@@ -366,6 +394,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } else if (payload.event === 'FRIEND_ACCEPTED') {
       toast.success('好友请求已通过')
       void get().refreshFriends()
+    } else if (payload.event === 'WHITEBOARD') {
+      // 白板事件转发给 WhiteboardDialog（以 conversationId 过滤）
+      window.dispatchEvent(new CustomEvent('wetalk:whiteboard', { detail: payload.data }))
     } else if (payload.event === 'TYPING') {
       const data = payload.data as { conversationId: string; senderId: number }
       const selfId = useAuthStore.getState().user?.id
@@ -507,6 +538,7 @@ async function sendRequest(
     clientMsgId: string
     replyToId?: string | null
     mentionedUserIds?: number[] | null
+    burnAfterRead?: boolean
   },
   set: (fn: (s: ChatState) => Partial<ChatState>) => void,
   get: () => ChatState
@@ -560,6 +592,7 @@ async function sendWithRetry(
     content: string
     replyToId?: string | null
     mentionedUserIds?: number[] | null
+    burnAfterRead?: boolean
   }
 ) {
   const selfId = useAuthStore.getState().user!.id
@@ -664,5 +697,6 @@ function syncConversations(
     }))
   ]
   next.sort((a, b) => (b.lastMessage?.createdAt ?? '').localeCompare(a.lastMessage?.createdAt ?? ''))
-  return next
+  // AI 助手固定会话始终置顶
+  return [AI_CONVERSATION, ...next]
 }

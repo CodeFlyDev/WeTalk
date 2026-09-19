@@ -43,6 +43,8 @@ export interface SendMessageRequest {
   replyToId?: string | null
   /** 群聊 @ 提及的用户 ID */
   mentionedUserIds?: number[] | null
+  /** 阅后即焚 */
+  burnAfterRead?: boolean | null
 }
 
 export interface MessageView {
@@ -63,6 +65,10 @@ export interface MessageView {
   pinned?: boolean
   pinnedBy?: number | null
   pinnedAt?: string | null
+  /** 阅后即焚（接收方倒计时结束调 burn） */
+  burnAfterReading?: boolean
+  /** 已焚毁（内容清空，展示占位） */
+  burned?: boolean
 }
 
 export interface SendResult {
@@ -146,11 +152,19 @@ export interface RedPacketView {
 }
 
 /** ws /user/queue/notify 事件 */
-export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED' | 'TYPING'
+export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED' | 'TYPING' | 'WHITEBOARD'
 
 export interface NotifyPayload {
   event: NotifyEvent
   data: unknown
+}
+
+/** 白板 notify data（WHITEBOARD 事件） */
+export interface WhiteboardNotify {
+  conversationId: string
+  event: 'STROKE' | 'CLEAR'
+  stroke: string | null
+  fromUserId: number
 }
 
 /** 群文件（由群会话内 type=FILE 消息聚合） */

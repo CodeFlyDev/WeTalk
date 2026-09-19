@@ -26,5 +26,9 @@ public record MessageView(
         LocalDateTime createdAt,
         boolean pinned,
         Long pinnedBy,
-        LocalDateTime pinnedAt) {
+        LocalDateTime pinnedAt,
+        /** 阅后即焚标记（接收方倒计时结束调 burn） */
+        boolean burnAfterReading,
+        /** 已焚毁（内容已清空，展示占位） */
+        boolean burned) {
 }

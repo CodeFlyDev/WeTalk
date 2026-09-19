@@ -52,8 +52,38 @@ export const messageApi = {
   forward(id: string, targets: { type: 'dm' | 'group'; targetId: number }[]) {
     return unwrap<SendResult[]>(http.post(`/messages/${id}/forward`, { targets }))
   },
+  /** 阅后即焚：接收方阅读后触发焚毁 */
+  burn(id: string) {
+    return unwrap<MessageView>(http.post(`/messages/${id}/burn`))
+  },
+  /** 白板历史全量回放（笔画 JSON 列表） */
+  whiteboard(conversationId: string) {
+    return unwrap<string[]>(http.get('/messages/whiteboard', { params: { conversationId } }))
+  },
+  /** 定时发送 */
+  schedule(body: { receiverId?: number | null; groupId?: number | null; content: string; sendAt: string }) {
+    return unwrap<ScheduledView>(http.post('/messages/schedule', body))
+  },
+  scheduledList() {
+    return unwrap<ScheduledView[]>(http.get('/messages/schedule'))
+  },
+  cancelScheduled(id: number) {
+    return unwrap<void>(http.delete(`/messages/schedule/${id}`))
+  },
   /** 群文件：聚合群会话内 type=FILE 消息 */
   groupFiles(groupId: number) {
     return unwrap<GroupFileView[]>(http.get('/messages/group-files', { params: { groupId } }))
   }
+}
+
+/** 定时消息视图（对齐 wetalk-message ScheduledView） */
+export interface ScheduledView {
+  id: number
+  senderId: number
+  receiverId: number | null
+  groupId: number | null
+  content: string
+  sendAt: string
+  status: string
+  failReason: string | null
 }

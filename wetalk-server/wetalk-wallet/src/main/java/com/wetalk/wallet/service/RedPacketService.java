@@ -172,7 +172,7 @@ public class RedPacketService {
             return;
         }
         SendMessageRequest request = new SendMessageRequest(cmd.receiverId(), cmd.groupId(),
-                MessageType.RED_PACKET, cmd.redPacketId(), null, cmd.clientMsgId(), null, null);
+                MessageType.RED_PACKET, cmd.redPacketId(), null, cmd.clientMsgId(), null, null, null);
         messageService.sendInternal(cmd.senderId(), request);
         txLog.setStatus(RedPacketTxLog.SENT);
         txLogRepository.save(txLog);

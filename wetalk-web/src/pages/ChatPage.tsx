@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Info, Phone, Search, Video } from 'lucide-react'
+import { Info, Lock, PenTool, Phone, Search, Sparkles, Video } from 'lucide-react'
 import Sidebar from '@/components/chat/Sidebar'
 import MessageList from '@/components/chat/MessageList'
 import ChatInput from '@/components/chat/ChatInput'
 import SearchPanel from '@/components/chat/SearchPanel'
 import PinnedBar from '@/components/chat/PinnedBar'
 import GroupInfoDialog from '@/components/chat/GroupInfoDialog'
+import SummaryDialog from '@/components/chat/SummaryDialog'
+import WhiteboardDialog from '@/components/chat/WhiteboardDialog'
+import AiChatPanel from '@/components/ai/AiChatPanel'
 import CallOverlay from '@/components/call/CallOverlay'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { ensureRegistered, fingerprint } from '@/lib/e2ee'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
 import { useCallStore } from '@/webrtc/call'
@@ -29,9 +34,13 @@ export default function ChatPage() {
   const [wsStatus, setWsStatus] = useState<WsStatus>(socket.status)
   const [searchOpen, setSearchOpen] = useState(false)
   const [groupInfoOpen, setGroupInfoOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false)
 
   useEffect(() => {
     void init()
+    // E2EE：注册本机密钥对（失败静默，不阻塞主链路）
+    void ensureRegistered()
     // WS 接线：登录后建立连接，回调解绑由 disconnect 前置换
     socket.onMessage = handleIncoming
     socket.onNotify = handleNotify
@@ -79,9 +88,30 @@ export default function ChatPage() {
                 )}
               </div>
               <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                {active.type === 'group' ? '群聊' : '单聊'}
+                {active.type === 'group' ? '群聊' : active.type === 'ai' ? 'AI' : '单聊'}
               </span>
               <div className="ml-auto flex items-center gap-1">
+                {active.type !== 'ai' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="协作白板"
+                    onClick={() => setWhiteboardOpen(true)}
+                  >
+                    <PenTool className="h-4 w-4" />
+                  </Button>
+                )}
+                {active.type !== 'ai' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="AI 聊天摘要"
+                    onClick={() => setSummaryOpen(true)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                )}
+                {active.type === 'dm' && active.peerId != null && <E2eeLock peerId={active.peerId} />}
                 {active.type === 'group' && (
                   <Button
                     variant="ghost"
@@ -135,7 +165,8 @@ export default function ChatPage() {
             {searchOpen && (
               <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} conversation={active} />
             )}
-            {initialized && (
+            {initialized && active.type === 'ai' && <AiChatPanel />}
+            {initialized && active.type !== 'ai' && (
               <>
                 <PinnedBar conversation={active} />
                 <MessageList conversation={active} />
@@ -161,6 +192,51 @@ export default function ChatPage() {
           onClose={() => setGroupInfoOpen(false)}
         />
       )}
+      {/* AI 聊天摘要 */}
+      {active && active.type !== 'ai' && (
+        <SummaryDialog
+          conversationId={active.id}
+          conversationName={active.name}
+          open={summaryOpen}
+          onClose={() => setSummaryOpen(false)}
+        />
+      )}
+      {/* 协作白板 */}
+      {active && active.type !== 'ai' && (
+        <WhiteboardDialog
+          conversation={active}
+          open={whiteboardOpen}
+          onClose={() => setWhiteboardOpen(false)}
+        />
+      )}
     </div>
+  )
+}
+
+/** 单聊端到端加密开关：点击切换（本机记忆），开启后悬停显示密钥指纹供双方核对 */
+function E2eeLock({ peerId }: { peerId: number }) {
+  const key = `wetalk.e2ee.on.${peerId}`
+  const [on, setOn] = useState(() => localStorage.getItem(key) === '1')
+  const [fp, setFp] = useState('')
+
+  useEffect(() => {
+    setOn(localStorage.getItem(key) === '1')
+    if (localStorage.getItem(key) === '1') void fingerprint(peerId).then(setFp)
+  }, [key, peerId])
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      title={on ? `端到端加密已开启${fp ? `（指纹 ${fp}）` : ''}` : '端到端加密已关闭（点击开启）'}
+      onClick={() =>
+        setOn((v) => {
+          localStorage.setItem(key, v ? '0' : '1')
+          return !v
+        })
+      }
+    >
+      <Lock className={cn('h-4 w-4', on && 'text-emerald-500')} />
+    </Button>
   )
 }

@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import { FileUp, Image as ImageIcon, Mic, Smile, Trash2, Send as SendIcon, Video as VideoIcon, Wallet, X } from 'lucide-react'
+import { Clock, FileUp, Flame, Image as ImageIcon, Mic, Smile, Sticker, Trash2, Send as SendIcon, Video as VideoIcon, Wallet, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { encrypt } from '@/lib/e2ee'
 import { EmojiPicker } from './EmojiPicker'
 import RedPacketDialog from './RedPacketDialog'
+import ScheduleDialog from './ScheduleDialog'
+import StickerDialog from './StickerDialog'
 import { previewOf } from './MessageItem'
 import type { Conversation, SendOptions } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
 import { socket } from '@/ws/socket'
+import { fileFromPath, isTauri, pickFile } from '@/lib/desktop'
 
 /** 录音/录制上限（秒），与后端 MAX 限制对齐 */
 const MAX_RECORD_SECONDS = 60
@@ -31,6 +36,14 @@ export default function ChatInput({ conversation }: { conversation: Conversation
   const [recordMode, setRecordMode] = useState<'voice' | 'video'>('voice')
   const [recordSeconds, setRecordSeconds] = useState(0)
   const [rpOpen, setRpOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [stickerOpen, setStickerOpen] = useState(false)
+  /** 阅后即焚（dm 限定，per-conversation 记忆） */
+  const burnKey = `wetalk.burn.${conversation.id}`
+  const [burnOn, setBurnOn] = useState(() => localStorage.getItem(burnKey) === '1')
+  useEffect(() => {
+    setBurnOn(localStorage.getItem(`wetalk.burn.${conversation.id}`) === '1')
+  }, [conversation.id])
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -161,15 +174,54 @@ export default function ChatInput({ conversation }: { conversation: Conversation
     const opts: SendOptions = {}
     if (replyTo) opts.replyToId = replyTo.id
     if (mentionIds.length > 0) opts.mentionedUserIds = mentionIds
+    if (burnOn && conversation.type === 'dm') opts.burnAfterRead = true
+    // 单聊 E2EE 开启时加密明文（密文前缀 e2e:，失败不发送）
+    let toSend = content
+    if (conversation.type === 'dm' && localStorage.getItem(`wetalk.e2ee.on.${conversation.peerId}`) === '1') {
+      try {
+        toSend = await encrypt(conversation.peerId!, content)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '加密失败')
+        return
+      }
+    }
     setText('')
     setMentionIds([])
     setMentionQuery(null)
     setEmojiOpen(false)
     setReplyTo(null)
-    await sendText(target, content, opts)
+    await sendText(target, toSend, opts)
+  }
+
+  function toggleBurn() {
+    setBurnOn((v) => {
+      localStorage.setItem(burnKey, v ? '0' : '1')
+      return !v
+    })
   }
 
   function onPickFile(kind: 'IMAGE' | 'FILE') {
+    // 桌面端走原生文件对话框（路径 → asset 协议读字节 → 复用 presign 直传链路）
+    if (isTauri()) {
+      void (async () => {
+        const paths = await pickFile(
+          kind === 'IMAGE'
+            ? { filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }] }
+            : undefined
+        )
+        const path = paths?.[0]
+        if (!path) return
+        const file = await fileFromPath(path)
+        if (!file) {
+          toast.error('读取本地文件失败')
+          return
+        }
+        const opts: SendOptions = replyTo ? { replyToId: replyTo.id } : {}
+        setReplyTo(null)
+        await sendFile(target, file, kind, opts)
+      })()
+      return
+    }
     const input = kind === 'IMAGE' ? imageInputRef.current : fileInputRef.current
     input?.click()
   }
@@ -239,6 +291,22 @@ export default function ChatInput({ conversation }: { conversation: Conversation
             <Button variant="ghost" size="icon" title="发红包" onClick={() => setRpOpen(true)}>
               <Wallet className="h-5 w-5" />
             </Button>
+            <Button variant="ghost" size="icon" title="AI 表情包" onClick={() => setStickerOpen(true)}>
+              <Sticker className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" title="定时发送" onClick={() => setScheduleOpen(true)}>
+              <Clock className="h-5 w-5" />
+            </Button>
+            {conversation.type === 'dm' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title={burnOn ? '阅后即焚：已开启' : '阅后即焚：已关闭'}
+                onClick={toggleBurn}
+              >
+                <Flame className={cn('h-5 w-5', burnOn && 'text-orange-500')} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -268,6 +336,8 @@ export default function ChatInput({ conversation }: { conversation: Conversation
       </div>
 
       <RedPacketDialog conversation={conversation} open={rpOpen} onClose={() => setRpOpen(false)} />
+      <ScheduleDialog conversation={conversation} open={scheduleOpen} onClose={() => setScheduleOpen(false)} />
+      <StickerDialog conversation={conversation} open={stickerOpen} onClose={() => setStickerOpen(false)} />
 
       {recording ? (
         <div className="flex items-center gap-3 px-3 py-3">

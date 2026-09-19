@@ -58,6 +58,12 @@ public class MessageDoc {
 
     private LocalDateTime pinnedAt;
 
+    /** 阅后即焚：接收方阅读（渲染倒计时结束）后触发焚毁 */
+    private boolean burnAfterReading;
+
+    /** 已焚毁（content/refObjectKey 清空，双方展示占位） */
+    private boolean burned;
+
     private LocalDateTime createdAt;
 
     public String getId() {
@@ -186,6 +192,22 @@ public class MessageDoc {
 
     public void setPinnedAt(LocalDateTime pinnedAt) {
         this.pinnedAt = pinnedAt;
+    }
+
+    public boolean isBurnAfterReading() {
+        return burnAfterReading;
+    }
+
+    public void setBurnAfterReading(boolean burnAfterReading) {
+        this.burnAfterReading = burnAfterReading;
+    }
+
+    public boolean isBurned() {
+        return burned;
+    }
+
+    public void setBurned(boolean burned) {
+        this.burned = burned;
     }
 
     public LocalDateTime getCreatedAt() {

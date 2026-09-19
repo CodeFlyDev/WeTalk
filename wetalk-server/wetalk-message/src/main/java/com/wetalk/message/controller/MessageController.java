@@ -8,6 +8,7 @@ import com.wetalk.message.dto.MessageView;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
 import com.wetalk.message.service.MessageService;
+import com.wetalk.message.service.WhiteboardService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,9 +35,11 @@ public class MessageController {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final MessageService messageService;
+    private final WhiteboardService whiteboardService;
 
-    public MessageController(MessageService messageService) {
+    public MessageController(MessageService messageService, WhiteboardService whiteboardService) {
         this.messageService = messageService;
+        this.whiteboardService = whiteboardService;
     }
 
     @PostMapping
@@ -69,6 +72,18 @@ public class MessageController {
     @PostMapping("/{id}/recall")
     public ApiResult<MessageView> recall(@PathVariable String id) {
         return ApiResult.ok(messageService.recall(CurrentUser.id(), id));
+    }
+
+    /** 阅后即焚：接收方阅读后触发（内容清空，双方展示焚毁占位） */
+    @PostMapping("/{id}/burn")
+    public ApiResult<MessageView> burn(@PathVariable String id) {
+        return ApiResult.ok(messageService.burn(CurrentUser.id(), id));
+    }
+
+    /** 白板历史全量回放（笔画 JSON 列表，按序） */
+    @GetMapping("/whiteboard")
+    public ApiResult<List<String>> whiteboard(@RequestParam String conversationId) {
+        return ApiResult.ok(whiteboardService.history(CurrentUser.id(), conversationId));
     }
 
     /** 置顶消息（会话参与者均可） */

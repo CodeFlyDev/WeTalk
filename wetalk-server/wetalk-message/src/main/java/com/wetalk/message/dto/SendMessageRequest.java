@@ -17,7 +17,9 @@ public record SendMessageRequest(
         @Size(max = 512) String refObjectKey,
         @Size(max = 64) String clientMsgId,
         @Size(max = 64) String replyToId,
-        @Size(max = 100, message = "提及人数过多") List<Long> mentionedUserIds) {
+        @Size(max = 100, message = "提及人数过多") List<Long> mentionedUserIds,
+        /** 阅后即焚（可选，默认关闭） */
+        Boolean burnAfterRead) {
 
     public boolean isGroupMessage() {
         return groupId != null;

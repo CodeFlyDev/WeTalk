@@ -36,6 +36,14 @@ public class FriendService implements FriendPort {
         this.notifier = notifier;
     }
 
+    /** 好友 ID 列表（朋友圈 feed 等跨模块用） */
+    @Transactional(readOnly = true)
+    public List<Long> friendIds(Long userId) {
+        return friendshipRepository.findByUserId(userId).stream()
+                .map(Friendship::getFriendId)
+                .toList();
+    }
+
     /** 发起好友申请（对方不存在则 404；已是好友则幂等拒绝） */
     @Transactional
     public FriendRequestView apply(Long fromUserId, Long toUserId, String remark) {
