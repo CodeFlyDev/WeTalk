@@ -2,11 +2,14 @@ package com.wetalk.message.controller;
 
 import com.wetalk.auth.security.CurrentUser;
 import com.wetalk.common.ApiResult;
+import com.wetalk.message.dto.ForwardRequest;
+import com.wetalk.message.dto.GroupFileView;
 import com.wetalk.message.dto.MessageView;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
 import com.wetalk.message.service.MessageService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,6 +69,37 @@ public class MessageController {
     @PostMapping("/{id}/recall")
     public ApiResult<MessageView> recall(@PathVariable String id) {
         return ApiResult.ok(messageService.recall(CurrentUser.id(), id));
+    }
+
+    /** 置顶消息（会话参与者均可） */
+    @PostMapping("/{id}/pin")
+    public ApiResult<MessageView> pin(@PathVariable String id) {
+        return ApiResult.ok(messageService.setPinned(CurrentUser.id(), id, true));
+    }
+
+    /** 取消置顶 */
+    @DeleteMapping("/{id}/pin")
+    public ApiResult<MessageView> unpin(@PathVariable String id) {
+        return ApiResult.ok(messageService.setPinned(CurrentUser.id(), id, false));
+    }
+
+    /** 会话置顶消息列表 */
+    @GetMapping("/pinned")
+    public ApiResult<List<MessageView>> pinned(@RequestParam String conversationId) {
+        return ApiResult.ok(messageService.pinned(CurrentUser.id(), conversationId));
+    }
+
+    /** 转发消息到多个目标会话（产生全新消息） */
+    @PostMapping("/{id}/forward")
+    public ApiResult<List<SendResult>> forward(@PathVariable String id,
+                                               @Valid @RequestBody ForwardRequest request) {
+        return ApiResult.ok(messageService.forward(CurrentUser.id(), id, request));
+    }
+
+    /** 群文件：聚合群会话内 type=FILE 消息 */
+    @GetMapping("/group-files")
+    public ApiResult<List<GroupFileView>> groupFiles(@RequestParam Long groupId) {
+        return ApiResult.ok(messageService.groupFiles(CurrentUser.id(), groupId));
     }
 
     @GetMapping("/history")

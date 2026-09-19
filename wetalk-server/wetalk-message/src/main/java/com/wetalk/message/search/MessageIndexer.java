@@ -105,6 +105,7 @@ public class MessageIndexer {
     private static MessageView toView(MessageSearchDoc doc) {
         return new MessageView(doc.getId(), doc.getConversationId(), doc.getSenderId(),
                 doc.getReceiverId(), doc.getGroupId(), doc.getType(), doc.getContent(),
-                null, null, null, null, false, doc.getCreatedAt());
+                null, null, null, null, false, doc.getCreatedAt(),
+                false, null, null);
     }
 }

@@ -59,6 +59,10 @@ export interface MessageView {
   clientMsgId: string | null
   recalled: boolean
   createdAt: string
+  /** 置顶状态（dm 双方 / 群任意成员均可置顶） */
+  pinned?: boolean
+  pinnedBy?: number | null
+  pinnedAt?: string | null
 }
 
 export interface SendResult {
@@ -142,11 +146,20 @@ export interface RedPacketView {
 }
 
 /** ws /user/queue/notify 事件 */
-export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED'
+export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED' | 'TYPING'
 
 export interface NotifyPayload {
   event: NotifyEvent
   data: unknown
+}
+
+/** 群文件（由群会话内 type=FILE 消息聚合） */
+export interface GroupFileView {
+  messageId: string
+  senderId: number
+  fileName: string
+  objectKey: string | null
+  createdAt: string
 }
 
 /* ---------- 音视频信令（对齐 wetalk-voip dto） ---------- */

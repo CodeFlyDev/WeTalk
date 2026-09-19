@@ -47,6 +47,8 @@ interface ChatState {
   activeId: string | null
   /** 正在引用回复的消息（输入框上方展示，发送后清除） */
   replyTo: LocalMessage | null
+  /** 输入中状态：conversationId → senderId → 失效时间戳（3s 无续包消失） */
+  typing: Record<string, Record<number, number>>
   loadingHistory: boolean
   initialized: boolean
 
@@ -58,7 +60,13 @@ interface ChatState {
   sendFile: (target: ConversationTarget, file: File, type: MessageType, opts?: SendOptions) => Promise<void>
   /** 语音消息：content = 时长秒数字符串 */
   sendVoice: (target: ConversationTarget, blob: Blob, seconds: number) => Promise<void>
+  /** 视频消息：content = 时长秒数字符串（与语音一致，上限 60s） */
+  sendVideo: (target: ConversationTarget, blob: Blob, seconds: number) => Promise<void>
   recallMessage: (id: string, conversationId: string) => Promise<void>
+  /** 置顶 / 取消置顶（成功后本地原地更新，对端经 WS 推送原地更新） */
+  togglePin: (message: LocalMessage) => Promise<void>
+  /** 转发消息到多个目标会话 */
+  forwardMessage: (id: string, targets: { type: 'dm' | 'group'; targetId: number }[]) => Promise<number>
   setReplyTo: (m: LocalMessage | null) => void
   /** 全局搜索跳转：会话不存在时本地补建占位 */
   ensureConversation: (conv: Conversation) => void
@@ -97,6 +105,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   unread: {},
   activeId: null,
   replyTo: null,
+  typing: {},
   loadingHistory: false,
   initialized: false,
 
@@ -203,39 +212,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendVoice: async (target, blob, seconds) => {
-    const clientMsgId = newClientMsgId()
-    const selfId = useAuthStore.getState().user!.id
-    const convId = conversationIdOf(target, selfId)
-    const file = new File([blob], `voice-${clientMsgId}.webm`, { type: blob.type || 'audio/webm' })
-    const placeholder: LocalMessage = {
-      id: `pending:${clientMsgId}`,
-      conversationId: convId,
-      senderId: selfId,
-      receiverId: target.peerId ?? null,
-      groupId: target.groupId ?? null,
-      type: 'VOICE',
-      content: String(seconds),
-      refObjectKey: null,
-      replyToId: null,
-      mentionedUserIds: null,
-      clientMsgId,
-      recalled: false,
-      createdAt: new Date().toISOString(),
-      pending: true
-    }
-    appendMessage(set, convId, placeholder)
-    try {
-      const presign = await uploadFile(file, clientMsgId)
-      await sendRequest(
-        target,
-        { type: 'VOICE', content: String(seconds), refObjectKey: presign.objectKey, clientMsgId },
-        set,
-        get
-      )
-    } catch (err) {
-      markFailed(set, convId, clientMsgId)
-      toast.error(errorMessage(err))
-    }
+    await sendMediaMessage(set, get, target, blob, seconds, 'VOICE', 'voice')
+  },
+
+  sendVideo: async (target, blob, seconds) => {
+    await sendMediaMessage(set, get, target, blob, seconds, 'VIDEO', 'video')
   },
 
   recallMessage: async (id, conversationId) => {
@@ -255,6 +236,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setReplyTo: (m) => set({ replyTo: m }),
+
+  togglePin: async (message) => {
+    const next = !message.pinned
+    try {
+      const view = await messageApi.pin(message.id, next)
+      set((s) => ({
+        messages: {
+          ...s.messages,
+          [message.conversationId]: (s.messages[message.conversationId] ?? []).map((m) =>
+            m.id === message.id
+              ? { ...m, pinned: view.pinned, pinnedBy: view.pinnedBy ?? null, pinnedAt: view.pinnedAt ?? null }
+              : m
+          )
+        }
+      }))
+    } catch (err) {
+      toast.error(errorMessage(err))
+    }
+  },
+
+  forwardMessage: async (id, targets) => {
+    const results = await messageApi.forward(id, targets)
+    // 目标会话已加载过消息 → 拉取新消息本体补进本地，避免等下次进入会话
+    await Promise.allSettled(
+      results.map(async (r) => {
+        if (get().messages[r.conversationId]) {
+          const view = await messageApi.getById(r.messageId)
+          appendMessage(set, r.conversationId, view)
+        }
+      })
+    )
+    return results.length
+  },
 
   ensureConversation: (conv) =>
     set((s) =>
@@ -282,10 +296,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return
     }
 
-    const exists = state.messages[view.conversationId]?.some(
+    // 已存在：置顶变更推送 → 原地更新 pinned（其余重复推送忽略）
+    const existing = state.messages[view.conversationId]?.find(
       (m) => m.id === view.id || (view.clientMsgId && m.clientMsgId === view.clientMsgId)
     )
-    if (!exists) appendMessage(set, view.conversationId, view)
+    if (existing) {
+      if (view.pinned !== undefined && view.pinned !== existing.pinned) {
+        set((s) => ({
+          messages: {
+            ...s.messages,
+            [view.conversationId]: (s.messages[view.conversationId] ?? []).map((m) =>
+              m.id === existing.id
+                ? { ...m, pinned: view.pinned, pinnedBy: view.pinnedBy ?? null, pinnedAt: view.pinnedAt ?? null }
+                : m
+            )
+          }
+        }))
+      }
+      return
+    }
+    appendMessage(set, view.conversationId, view)
 
     // 会话可能不存在（首次收到某人消息）→ 本地补建，后台刷新修正
     if (!state.conversations.some((c) => c.id === view.conversationId)) {
@@ -336,6 +366,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } else if (payload.event === 'FRIEND_ACCEPTED') {
       toast.success('好友请求已通过')
       void get().refreshFriends()
+    } else if (payload.event === 'TYPING') {
+      const data = payload.data as { conversationId: string; senderId: number }
+      const selfId = useAuthStore.getState().user?.id
+      if (!data || data.senderId === selfId) return
+      const expireAt = Date.now() + 3000
+      set((s) => ({
+        typing: {
+          ...s.typing,
+          [data.conversationId]: { ...(s.typing[data.conversationId] ?? {}), [data.senderId]: expireAt }
+        }
+      }))
+      // 3s 无续包自动消失
+      setTimeout(() => {
+        set((s) => {
+          const map = { ...(s.typing[data.conversationId] ?? {}) }
+          for (const [uid, exp] of Object.entries(map)) {
+            if ((exp as number) <= Date.now()) delete map[Number(uid)]
+          }
+          return { typing: { ...s.typing, [data.conversationId]: map } }
+        })
+      }, 3100)
     }
   },
 
@@ -406,6 +457,46 @@ export const useChatStore = create<ChatState>((set, get) => ({
 }))
 
 /* ---------- 内部工具 ---------- */
+
+/** 语音/视频消息通用发送：占位 → presign 直传 → 发送（content = 时长秒数） */
+async function sendMediaMessage(
+  set: (fn: (s: ChatState) => Partial<ChatState>) => void,
+  get: () => ChatState,
+  target: ConversationTarget,
+  blob: Blob,
+  seconds: number,
+  type: 'VOICE' | 'VIDEO',
+  prefix: string
+) {
+  const clientMsgId = newClientMsgId()
+  const selfId = useAuthStore.getState().user!.id
+  const convId = conversationIdOf(target, selfId)
+  const file = new File([blob], `${prefix}-${clientMsgId}.webm`, { type: blob.type || `${prefix}/webm` })
+  const placeholder: LocalMessage = {
+    id: `pending:${clientMsgId}`,
+    conversationId: convId,
+    senderId: selfId,
+    receiverId: target.peerId ?? null,
+    groupId: target.groupId ?? null,
+    type,
+    content: String(seconds),
+    refObjectKey: null,
+    replyToId: null,
+    mentionedUserIds: null,
+    clientMsgId,
+    recalled: false,
+    createdAt: new Date().toISOString(),
+    pending: true
+  }
+  appendMessage(set, convId, placeholder)
+  try {
+    const presign = await uploadFile(file, clientMsgId)
+    await sendRequest(target, { type, content: String(seconds), refObjectKey: presign.objectKey, clientMsgId }, set, get)
+  } catch (err) {
+    markFailed(set, convId, clientMsgId)
+    toast.error(errorMessage(err))
+  }
+}
 
 async function sendRequest(
   target: ConversationTarget,

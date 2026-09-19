@@ -51,6 +51,13 @@ public class MessageDoc {
 
     private LocalDateTime recalledAt;
 
+    /** 是否置顶（会话参与者均可置顶） */
+    private boolean pinned;
+
+    private Long pinnedBy;
+
+    private LocalDateTime pinnedAt;
+
     private LocalDateTime createdAt;
 
     public String getId() {
@@ -155,6 +162,30 @@ public class MessageDoc {
 
     public void setRecalledAt(LocalDateTime recalledAt) {
         this.recalledAt = recalledAt;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
+    public Long getPinnedBy() {
+        return pinnedBy;
+    }
+
+    public void setPinnedBy(Long pinnedBy) {
+        this.pinnedBy = pinnedBy;
+    }
+
+    public LocalDateTime getPinnedAt() {
+        return pinnedAt;
+    }
+
+    public void setPinnedAt(LocalDateTime pinnedAt) {
+        this.pinnedAt = pinnedAt;
     }
 
     public LocalDateTime getCreatedAt() {

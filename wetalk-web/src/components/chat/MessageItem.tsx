@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Check, Download, FileText, Loader2, Pause, Play, Reply, Undo2, X } from 'lucide-react'
+import { Check, Download, FileText, Forward, Loader2, Pause, Pin, PinOff, Play, Reply, Undo2, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { cn, errorMessage, formatTime } from '@/lib/utils'
 import { getFileUrl } from '@/api/files'
 import { messageApi } from '@/api/messages'
 import { aiApi } from '@/api/ai'
 import RedPacketCard from './RedPacketCard'
+import ForwardDialog from './ForwardDialog'
 import type { LocalMessage, Conversation } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
@@ -30,7 +31,9 @@ export default function MessageItem({
   const selfId = useAuthStore((s) => s.user?.id)
   const setReplyTo = useChatStore((s) => s.setReplyTo)
   const recallMessage = useChatStore((s) => s.recallMessage)
+  const togglePin = useChatStore((s) => s.togglePin)
   const [hovered, setHovered] = useState(false)
+  const [forwardOpen, setForwardOpen] = useState(false)
 
   // 已撤回：占位展示，不再渲染气泡
   if (m.recalled || m.type === 'RECALL') {
@@ -75,12 +78,13 @@ export default function MessageItem({
         </div>
         <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
           {isSelf && <SendStatus message={m} />}
+          {m.pinned && <Pin className="h-3 w-3 text-amber-500" />}
           <span>{formatTime(m.createdAt)}</span>
         </div>
       </div>
       {isSelf && <Avatar name="我" size={32} />}
 
-      {/* 悬停操作：回复 / 撤回 */}
+      {/* 悬停操作：回复 / 置顶 / 转发 / 撤回 */}
       {hovered && (
         <div
           className={cn(
@@ -95,6 +99,24 @@ export default function MessageItem({
           >
             <Reply className="h-3.5 w-3.5" />
           </button>
+          {(m.pinned || (!m.pending && !m.failed)) && (
+            <button
+              title={m.pinned ? '取消置顶' : '置顶'}
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => void togglePin(m)}
+            >
+              {m.pinned ? <PinOff className="h-3.5 w-3.5 text-amber-500" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          {!m.pending && !m.failed && (
+            <button
+              title="转发"
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => setForwardOpen(true)}
+            >
+              <Forward className="h-3.5 w-3.5" />
+            </button>
+          )}
           {canRecall && (
             <button
               title="撤回"
@@ -106,6 +128,12 @@ export default function MessageItem({
           )}
         </div>
       )}
+
+      <ForwardDialog
+        message={m}
+        open={forwardOpen}
+        onClose={() => setForwardOpen(false)}
+      />
     </div>
   )
 }
@@ -232,13 +260,38 @@ function MessageBody({ message: m, conversation }: { message: LocalMessage; conv
   if (m.type === 'VOICE' && m.refObjectKey) {
     return <VoiceMessage objectKey={m.refObjectKey} seconds={Number(m.content) || 0} messageId={m.id} />
   }
-  if ((m.type === 'FILE' || m.type === 'VIDEO') && m.refObjectKey) {
+  if (m.type === 'VIDEO' && m.refObjectKey) {
+    return <VideoMessage objectKey={m.refObjectKey} seconds={Number(m.content) || 0} />
+  }
+  if (m.type === 'FILE' && m.refObjectKey) {
     return <FileMessage name={m.content} objectKey={m.refObjectKey} />
   }
   if (m.type === 'RED_PACKET' && m.content) {
     return <RedPacketCard redPacketId={m.content} />
   }
   return <TextWithMentions content={m.content} names={memberNames} />
+}
+
+/** 视频消息：content 存时长秒数，<video> 内联播放 */
+function VideoMessage({ objectKey, seconds }: { objectKey: string; seconds: number }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    void getFileUrl(objectKey).then(setUrl).catch(() => setUrl(null))
+  }, [objectKey])
+
+  if (!url) {
+    return (
+      <div className="flex h-40 w-56 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+        <Loader2 className="mr-1 h-4 w-4 animate-spin" /> 视频加载中…
+      </div>
+    )
+  }
+  return (
+    <div className="overflow-hidden rounded-lg">
+      <video src={url} controls preload="metadata" className="max-h-64 max-w-xs rounded-lg bg-black" />
+      {seconds > 0 && <p className="mt-0.5 text-[10px] text-muted-foreground">时长 {seconds}&Prime;</p>}
+    </div>
+  )
 }
 
 /** 语音消息：点击播放/暂停 + 「转文字」，content 存时长秒数 */

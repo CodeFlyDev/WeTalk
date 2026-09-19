@@ -2,6 +2,7 @@ package com.wetalk.group.service;
 
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
+import com.wetalk.group.dto.AnnouncementRequest;
 import com.wetalk.group.dto.CreateGroupRequest;
 import com.wetalk.group.dto.GroupView;
 import com.wetalk.group.entity.Group;
@@ -121,6 +122,16 @@ public class GroupService implements GroupPort {
         }
         memberRepository.deleteByGroupId(groupId);
         groupRepository.delete(group);
+    }
+
+    /** 更新群公告（仅群主/管理员）；成员下次拉取群详情时可见 */
+    @Transactional
+    public GroupView setAnnouncement(Long operatorId, Long groupId, AnnouncementRequest request) {
+        requireAdmin(operatorId, groupId);
+        Group group = requireById(groupId);
+        String announcement = request.announcement();
+        group.setAnnouncement(announcement == null || announcement.isBlank() ? null : announcement.trim());
+        return toView(groupRepository.save(group));
     }
 
     // ---- GroupPort（供 wetalk-message 校验群消息） ----

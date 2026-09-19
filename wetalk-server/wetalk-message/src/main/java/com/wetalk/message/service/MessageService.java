@@ -4,6 +4,8 @@ import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
 import com.wetalk.common.MessageType;
 import com.wetalk.message.document.MessageDoc;
+import com.wetalk.message.dto.ForwardRequest;
+import com.wetalk.message.dto.GroupFileView;
 import com.wetalk.message.dto.MessageView;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * 消息领域服务：发送（校验 → MongoDB 持久化 → 在线推送/离线投递）、历史补拉、未读。
@@ -135,8 +138,7 @@ public class MessageService {
      * 成功后向在线接收方推送 RECALL 事件（离线方补拉历史时看到 recalled=true 占位）。
      */
     public MessageView recall(Long userId, String messageId) {
-        MessageDoc doc = messageRepository.findById(messageId)
-                .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "消息不存在"));
+        MessageDoc doc = requireParticipantDoc(userId, messageId);
         if (!doc.getSenderId().equals(userId)) {
             throw new BizException(ErrorCode.FORBIDDEN, "只能撤回自己发送的消息");
         }
@@ -151,27 +153,83 @@ public class MessageService {
         messageRepository.save(doc);
         searchIndexer.delete(messageId);
 
-        List<Long> recipients = doc.getGroupId() != null
-                ? groupPort.memberIds(doc.getGroupId()).stream().filter(id -> !id.equals(userId)).toList()
-                : List.of(doc.getReceiverId());
+        List<Long> recipients = recipientsOf(doc, userId);
         deliveryService.deliverRecall(MessageDeliveryService.toView(doc), recipients);
         return MessageDeliveryService.toView(doc);
     }
 
+    /**
+     * 置顶 / 取消置顶：会话参与者均可操作（dm 双方 / 群任意成员）。
+     * 成功后向在线接收方推送携带最新 pinned 状态的 MessageView，前端按 id 原地更新。
+     */
+    public MessageView setPinned(Long userId, String messageId, boolean pinned) {
+        MessageDoc doc = requireParticipantDoc(userId, messageId);
+        if (doc.isRecalled()) {
+            throw new BizException(ErrorCode.BIZ_ERROR, "已撤回的消息不能置顶");
+        }
+        doc.setPinned(pinned);
+        doc.setPinnedBy(pinned ? userId : null);
+        doc.setPinnedAt(pinned ? LocalDateTime.now() : null);
+        messageRepository.save(doc);
+        deliveryService.deliverPin(MessageDeliveryService.toView(doc), recipientsOf(doc, userId));
+        return MessageDeliveryService.toView(doc);
+    }
+
+    /** 会话置顶消息列表（时间倒序，校验请求者是会话参与者） */
+    public List<MessageView> pinned(Long userId, String conversationId) {
+        assertParticipant(userId, conversationId);
+        return messageRepository.findByConversationIdAndPinnedTrueOrderByPinnedAtDesc(conversationId)
+                .stream()
+                .map(MessageDeliveryService::toView)
+                .toList();
+    }
+
+    /**
+     * 转发消息到多个目标会话：源消息参与者校验 → 逐个目标走 sendInternal（正常推送/ES 链路）。
+     * 产生全新消息（新 clientMsgId），引用与 @ 丢弃；红包不可转发。
+     */
+    public List<SendResult> forward(Long userId, String messageId, ForwardRequest request) {
+        MessageDoc origin = requireParticipantDoc(userId, messageId);
+        if (origin.isRecalled()) {
+            throw new BizException(ErrorCode.BIZ_ERROR, "已撤回的消息不能转发");
+        }
+        if (origin.getType() == MessageType.RED_PACKET) {
+            throw new BizException(ErrorCode.BIZ_ERROR, "红包不支持转发");
+        }
+        List<SendResult> results = new java.util.ArrayList<>(request.targets().size());
+        for (ForwardRequest.ForwardTarget target : request.targets()) {
+            SendMessageRequest send;
+            if ("group".equals(target.type())) {
+                send = new SendMessageRequest(null, target.targetId(), origin.getType(),
+                        origin.getContent(), origin.getRefObjectKey(), "fwd-" + UUID.randomUUID(),
+                        null, null);
+            } else {
+                send = new SendMessageRequest(target.targetId(), null, origin.getType(),
+                        origin.getContent(), origin.getRefObjectKey(), "fwd-" + UUID.randomUUID(),
+                        null, null);
+            }
+            results.add(sendInternal(userId, send));
+        }
+        return results;
+    }
+
+    /** 群文件：聚合群会话内 type=FILE 的消息（校验请求者是群成员） */
+    public List<GroupFileView> groupFiles(Long userId, Long groupId) {
+        if (!groupPort.isMember(groupId, userId)) {
+            throw new BizException(ErrorCode.NOT_GROUP_MEMBER, "不是群成员");
+        }
+        return messageRepository
+                .findTop100ByConversationIdAndTypeOrderByCreatedAtDesc(
+                        ConversationIds.group(groupId), MessageType.FILE)
+                .stream()
+                .map(doc -> new GroupFileView(doc.getId(), doc.getSenderId(),
+                        doc.getContent(), doc.getRefObjectKey(), doc.getCreatedAt()))
+                .toList();
+    }
+
     /** 按 ID 查询单条消息（引用条回显），校验请求者是会话参与者 */
     public MessageView get(Long userId, String messageId) {
-        MessageDoc doc = messageRepository.findById(messageId)
-                .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "消息不存在"));
-        boolean participant;
-        if (doc.getGroupId() != null) {
-            participant = groupPort.isMember(doc.getGroupId(), userId);
-        } else {
-            participant = doc.getSenderId().equals(userId) || userId.equals(doc.getReceiverId());
-        }
-        if (!participant) {
-            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该消息");
-        }
-        return MessageDeliveryService.toView(doc);
+        return MessageDeliveryService.toView(requireParticipantDoc(userId, messageId));
     }
 
     /** 离线补拉：按会话向前翻页（返回升序） */
@@ -225,6 +283,29 @@ public class MessageService {
         if (!participant) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权访问该会话");
         }
+    }
+
+    /** 按 ID 取消息并校验请求者是会话参与者（dm 双方 / 群成员） */
+    private MessageDoc requireParticipantDoc(Long userId, String messageId) {
+        MessageDoc doc = messageRepository.findById(messageId)
+                .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "消息不存在"));
+        boolean participant;
+        if (doc.getGroupId() != null) {
+            participant = groupPort.isMember(doc.getGroupId(), userId);
+        } else {
+            participant = doc.getSenderId().equals(userId) || userId.equals(doc.getReceiverId());
+        }
+        if (!participant) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权操作该消息");
+        }
+        return doc;
+    }
+
+    /** 消息投递对象：群 → 其他成员；单聊 → 对方 */
+    private List<Long> recipientsOf(MessageDoc doc, Long operatorId) {
+        return doc.getGroupId() != null
+                ? groupPort.memberIds(doc.getGroupId()).stream().filter(id -> !id.equals(operatorId)).toList()
+                : List.of(doc.getReceiverId());
     }
 
     private void validate(SendMessageRequest request) {

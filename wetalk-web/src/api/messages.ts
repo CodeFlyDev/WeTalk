@@ -1,5 +1,5 @@
 import { http, unwrap } from './client'
-import type { MessageView, SendResult, SendMessageRequest } from '@/types/api'
+import type { GroupFileView, MessageView, SendResult, SendMessageRequest } from '@/types/api'
 
 export const messageApi = {
   send(body: SendMessageRequest) {
@@ -37,5 +37,23 @@ export const messageApi = {
   /** 撤回自己发送的消息（2 分钟内） */
   recall(id: string) {
     return unwrap<MessageView>(http.post(`/messages/${id}/recall`))
+  },
+  /** 置顶 / 取消置顶 */
+  pin(id: string, pinned: boolean) {
+    return pinned
+      ? unwrap<MessageView>(http.post(`/messages/${id}/pin`))
+      : unwrap<MessageView>(http.delete(`/messages/${id}/pin`))
+  },
+  /** 会话置顶消息列表 */
+  pinned(conversationId: string) {
+    return unwrap<MessageView[]>(http.get('/messages/pinned', { params: { conversationId } }))
+  },
+  /** 转发消息到多个目标会话 */
+  forward(id: string, targets: { type: 'dm' | 'group'; targetId: number }[]) {
+    return unwrap<SendResult[]>(http.post(`/messages/${id}/forward`, { targets }))
+  },
+  /** 群文件：聚合群会话内 type=FILE 消息 */
+  groupFiles(groupId: number) {
+    return unwrap<GroupFileView[]>(http.get('/messages/group-files', { params: { groupId } }))
   }
 }

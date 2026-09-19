@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import { FileUp, Image as ImageIcon, Mic, Smile, Trash2, Send as SendIcon, Wallet, X } from 'lucide-react'
+import { FileUp, Image as ImageIcon, Mic, Smile, Trash2, Send as SendIcon, Video as VideoIcon, Wallet, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmojiPicker } from './EmojiPicker'
 import RedPacketDialog from './RedPacketDialog'
@@ -8,15 +8,17 @@ import { previewOf } from './MessageItem'
 import type { Conversation, SendOptions } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
 import { useAuthStore } from '@/store/auth'
+import { socket } from '@/ws/socket'
 
-/** 录音上限（秒），与后端 MAX 限制对齐 */
+/** 录音/录制上限（秒），与后端 MAX 限制对齐 */
 const MAX_RECORD_SECONDS = 60
 
-/** 输入区：文本（Enter 发送 / Shift+Enter 换行）+ 表情面板 + 图片/文件发送 + 引用回复 + @ 提及 */
+/** 输入区：文本（Enter 发送 / Shift+Enter 换行）+ 表情面板 + 图片/文件/音视频发送 + 引用回复 + @ 提及 */
 export default function ChatInput({ conversation }: { conversation: Conversation }) {
   const sendText = useChatStore((s) => s.sendText)
   const sendFile = useChatStore((s) => s.sendFile)
   const sendVoice = useChatStore((s) => s.sendVoice)
+  const sendVideo = useChatStore((s) => s.sendVideo)
   const replyTo = useChatStore((s) => s.replyTo)
   const setReplyTo = useChatStore((s) => s.setReplyTo)
   const groups = useChatStore((s) => s.groups)
@@ -26,12 +28,14 @@ export default function ChatInput({ conversation }: { conversation: Conversation
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionIds, setMentionIds] = useState<number[]>([])
   const [recording, setRecording] = useState(false)
+  const [recordMode, setRecordMode] = useState<'voice' | 'video'>('voice')
   const [recordSeconds, setRecordSeconds] = useState(0)
   const [rpOpen, setRpOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const previewRef = useRef<HTMLVideoElement>(null)
   const chunksRef = useRef<Blob[]>([])
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const secondsRef = useRef(0)
@@ -45,32 +49,38 @@ export default function ChatInput({ conversation }: { conversation: Conversation
     }
   }
 
-  function startRecording() {
+  function startRecording(mode: 'voice' | 'video') {
     if (recording) return
     navigator.mediaDevices
-      .getUserMedia({ audio: true })
+      .getUserMedia(mode === 'voice' ? { audio: true } : { audio: true, video: true })
       .then((stream) => {
+        if (mode === 'video' && previewRef.current) {
+          previewRef.current.srcObject = stream
+        }
         const rec = new MediaRecorder(stream)
         recorderRef.current = rec
         chunksRef.current = []
         secondsRef.current = 0
         cancelRef.current = false
+        setRecordMode(mode)
         rec.ondataavailable = (e) => {
           if (e.data.size > 0) chunksRef.current.push(e.data)
         }
         rec.onstop = () => {
           stream.getTracks().forEach((t) => t.stop())
+          if (previewRef.current) previewRef.current.srcObject = null
           stopRecordTimer()
           const seconds = secondsRef.current
           setRecording(false)
           setRecordSeconds(0)
           recorderRef.current = null
           if (cancelRef.current || seconds < 1) {
-            toast.info(cancelRef.current ? '已取消发送' : '录音时间太短')
+            toast.info(cancelRef.current ? '已取消发送' : (mode === 'voice' ? '录音时间太短' : '录制时间太短'))
             return
           }
-          const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
-          void sendVoice(target, blob, seconds)
+          const blob = new Blob(chunksRef.current, { type: rec.mimeType || (mode === 'voice' ? 'audio/webm' : 'video/webm') })
+          if (mode === 'voice') void sendVoice(target, blob, seconds)
+          else void sendVideo(target, blob, seconds)
         }
         rec.start()
         setRecording(true)
@@ -82,7 +92,7 @@ export default function ChatInput({ conversation }: { conversation: Conversation
           }
         }, 1000)
       })
-      .catch(() => toast.error('无法访问麦克风，请检查浏览器权限'))
+      .catch(() => toast.error(mode === 'voice' ? '无法访问麦克风，请检查浏览器权限' : '无法访问摄像头/麦克风，请检查浏览器权限'))
   }
 
   function stopRecording(cancel: boolean) {
@@ -233,9 +243,17 @@ export default function ChatInput({ conversation }: { conversation: Conversation
               variant="ghost"
               size="icon"
               title="按住说话（点击开始录音）"
-              onClick={startRecording}
+              onClick={() => startRecording('voice')}
             >
               <Mic className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="录制视频消息"
+              onClick={() => startRecording('video')}
+            >
+              <VideoIcon className="h-5 w-5" />
             </Button>
           </>
         )}
@@ -257,8 +275,18 @@ export default function ChatInput({ conversation }: { conversation: Conversation
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
             <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
           </span>
+          {recordMode === 'video' && (
+            <video
+              ref={previewRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-20 rounded-md border bg-black object-cover"
+            />
+          )}
           <span className="text-sm tabular-nums text-muted-foreground">
-            录音中 {String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:
+            {recordMode === 'voice' ? '录音中' : '录制视频中'}{' '}
+            {String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:
             {String(recordSeconds % 60).padStart(2, '0')} / {MAX_RECORD_SECONDS}s
           </span>
           <div className="ml-auto flex items-center gap-2">
@@ -278,6 +306,7 @@ export default function ChatInput({ conversation }: { conversation: Conversation
             onChange={(e) => {
               setText(e.target.value)
               detectMention(e.target.value, e.target.selectionStart)
+              socket.sendTyping(conversation.id)
             }}
             onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
             onKeyDown={onKey}

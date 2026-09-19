@@ -2,8 +2,10 @@ package com.wetalk.message.ws;
 
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
+import com.wetalk.message.dto.TypingRequest;
 import com.wetalk.message.presence.PresenceService;
 import com.wetalk.message.service.MessageService;
+import com.wetalk.message.service.TypingService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -23,10 +25,13 @@ public class WsEventListener {
 
     private final PresenceService presenceService;
     private final MessageService messageService;
+    private final TypingService typingService;
 
-    public WsEventListener(PresenceService presenceService, MessageService messageService) {
+    public WsEventListener(PresenceService presenceService, MessageService messageService,
+                           TypingService typingService) {
         this.presenceService = presenceService;
         this.messageService = messageService;
+        this.typingService = typingService;
     }
 
     @EventListener
@@ -57,6 +62,12 @@ public class WsEventListener {
     public SendResult send(SendMessageRequest request, Principal principal) {
         Long userId = parseUserId(principal).orElseThrow();
         return messageService.send(userId, request);
+    }
+
+    /** 输入中状态上报：推送 TYPING notify 给会话其他参与者（不落库） */
+    @MessageMapping("/typing")
+    public void typing(TypingRequest request, Principal principal) {
+        parseUserId(principal).ifPresent(userId -> typingService.typing(userId, request.conversationId()));
     }
 
     private Long userId(org.springframework.context.ApplicationEvent event) {

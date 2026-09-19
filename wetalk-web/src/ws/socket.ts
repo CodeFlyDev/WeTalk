@@ -94,6 +94,20 @@ class SocketManager {
     }
   }
 
+  /** 输入中状态：/app/typing，内置按会话 2s 节流 */
+  private typingSentAt = new Map<string, number>()
+  sendTyping(conversationId: string) {
+    if (!this.client?.connected) return
+    const now = Date.now()
+    const last = this.typingSentAt.get(conversationId) ?? 0
+    if (now - last < 2000) return
+    this.typingSentAt.set(conversationId, now)
+    this.client.publish({
+      destination: '/app/typing',
+      body: JSON.stringify({ conversationId })
+    })
+  }
+
   /** 定期心跳续期在线状态（对齐后端 PresenceService） */
   private startHeartbeat() {
     this.stopHeartbeat()

@@ -11,6 +11,9 @@ export const groupApi = {
   detail(groupId: number) {
     return unwrap<GroupView>(http.get(`/groups/${groupId}`))
   },
+  setAnnouncement(groupId: number, announcement: string) {
+    return unwrap<GroupView>(http.put(`/groups/${groupId}/announcement`, { announcement }))
+  },
   addMembers(groupId: number, userIds: number[]) {
     return unwrap<void>(http.post(`/groups/${groupId}/members`, null, { params: { userIds: userIds.join(',') } }))
   },

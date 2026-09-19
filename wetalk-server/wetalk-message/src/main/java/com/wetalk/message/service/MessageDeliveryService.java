@@ -77,6 +77,23 @@ public class MessageDeliveryService {
         }
     }
 
+    /**
+     * 置顶变更推送：只推在线用户（不产生未读计数），离线用户补拉 pinned 列表对齐。
+     * view 携带最新 pinned/pinnedBy/pinnedAt，前端按 id 原地更新。
+     */
+    public void deliverPin(MessageView view, List<Long> recipients) {
+        for (Long receiverId : recipients) {
+            if (receiverId == null || !presenceService.isOnline(receiverId)) {
+                continue;
+            }
+            try {
+                messagingTemplate.convertAndSendToUser(String.valueOf(receiverId), QUEUE_MESSAGES, view);
+            } catch (Exception e) {
+                log.warn("pin push failed, messageId={}, receiver={}", view.id(), receiverId, e);
+            }
+        }
+    }
+
     private void deliverOffline(MessageDoc doc, Long receiverId) {
         unreadService.increment(doc.getConversationId(), receiverId);
         offlineEventPublisher.publish(doc, receiverId);
@@ -86,6 +103,7 @@ public class MessageDeliveryService {
         return new MessageView(doc.getId(), doc.getConversationId(), doc.getSenderId(),
                 doc.getReceiverId(), doc.getGroupId(), doc.getType(), doc.getContent(),
                 doc.getRefObjectKey(), doc.getReplyToId(), doc.getMentionedUserIds(),
-                doc.getClientMsgId(), doc.isRecalled(), doc.getCreatedAt());
+                doc.getClientMsgId(), doc.isRecalled(), doc.getCreatedAt(),
+                doc.isPinned(), doc.getPinnedBy(), doc.getPinnedAt());
     }
 }
