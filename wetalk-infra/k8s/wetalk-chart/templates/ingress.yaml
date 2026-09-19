@@ -1,0 +1,22 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "wetalk.fullname" . }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # 统一入口：Ingress → gateway 服务 → Nacos lb:// 路由 core/ai
+                name: {{ include "wetalk.svcname" (list . "gateway") }}
+                port:
+                  number: {{ .Values.services.gateway.service.port }}
+{{- end }}

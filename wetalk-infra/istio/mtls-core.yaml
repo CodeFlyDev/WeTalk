@@ -1,0 +1,25 @@
+# =============================================================================
+# WeTalk Istio 网格治理（opt-in）：
+#   1. PeerAuthentication：默认 PERMISSIVE 平滑迁移，灰度稳定后切 STRICT（mTLS 全网格）
+#   2. DestinationRule：core 服务 WebSocket 会话一致哈希（替代 K8s Service sessionAffinity）
+# =============================================================================
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: wetalk
+spec:
+  mtls:
+    mode: PERMISSIVE   # 稳定后改 STRICT
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: wetalk-core
+  namespace: wetalk
+spec:
+  host: wetalk-core.wetalk.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        useSourceIp: true   # WS 会话粘住同一 Pod

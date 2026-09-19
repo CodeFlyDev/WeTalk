@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-friend</artifactId>
+    <name>wetalk-friend</name>
+    <description>好友（申请/同意/删除）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-user</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <!-- 在线通知走 STOMP /user/queue/notify（Broker 由 message 模块启用） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-messaging</artifactId>
+        </dependency>
+    </dependencies>
+</project>

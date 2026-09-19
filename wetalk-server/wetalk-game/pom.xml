@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-game</artifactId>
+    <name>wetalk-game</name>
+    <description>小游戏平台：五子棋（WS 实时对战，内存对局；后续按需加游戏类型）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- 好友校验（FriendPort）+ 在线表（PresenceService） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+    </dependencies>
+</project>

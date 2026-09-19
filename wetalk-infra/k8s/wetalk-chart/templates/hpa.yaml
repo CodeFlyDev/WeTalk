@@ -1,0 +1,26 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "wetalk.svcname" (list $ $name) }}
+  labels:
+    app: {{ include "wetalk.fullname" $ }}
+    service: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "wetalk.svcname" (list $ $name) }}
+  minReplicas: {{ $svc.hpa.minReplicas }}
+  maxReplicas: {{ $svc.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.hpa.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end }}

@@ -14,6 +14,10 @@ wetalk-web/dist/
 wetalk-web/.vite/
 wetalk-web/*.log
 
+# Rust / Tauri
+wetalk-desktop/src-tauri/target/
+wetalk-desktop/src-tauri/gen/
+
 # IDE
 .idea/
 .vscode/

@@ -1,0 +1,34 @@
+# =============================================================================
+# WeTalk Promtail 日志采集（Phase 8 可观测性）
+# docker_sd 自动发现 compose 项目内全部容器日志（stdout/stderr）→ 推送 Loki
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        # 仅采集 wetalk compose 项目（wetalk-net 同项目）容器，避免吞全宿主机日志
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=wetalk"]
+    relabel_configs:
+      # 容器名（去前导斜杠）作为 container 标签
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+      # compose service 名作为 service 标签（Grafana 按 service 过滤最直观）
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+      # stdout / stderr
+      - source_labels: ["__meta_docker_container_log_stream"]
+        target_label: stream

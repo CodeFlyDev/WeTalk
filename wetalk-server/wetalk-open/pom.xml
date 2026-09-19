@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-open</artifactId>
+    <name>wetalk-open</name>
+    <description>开放平台：API Key（个人访问令牌）+ Open API + Webhook 事件推送</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- CurrentUser（管理接口身份） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- key 归属用户展示 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-user</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Open API 复用消息领域服务（权限校验/发送链路内聚） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+    </dependencies>
+</project>

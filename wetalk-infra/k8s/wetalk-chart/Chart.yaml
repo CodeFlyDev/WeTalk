@@ -1,0 +1,6 @@
+apiVersion: v2
+name: wetalk
+description: WeTalk IM 平台 Helm Chart（Phase 8 微服务形态：gateway / core / ai 三业务服务；Nacos 等中间件集群外独立部署）
+type: application
+version: 0.2.0
+appVersion: "0.1.0"

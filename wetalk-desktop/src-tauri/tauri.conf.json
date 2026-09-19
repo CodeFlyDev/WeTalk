@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "WeTalk",
+  "version": "0.1.0",
+  "identifier": "com.wetalk.desktop",
+  "build": {
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../wetalk-web/dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "WeTalk",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$HOME/**",
+          "$DESKTOP/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**",
+          "$PICTURE/**",
+          "$MUSIC/**",
+          "$VIDEO/**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/YOUR_GITHUB_OWNER/YOUR_REPO/releases/latest/download/latest.json"
+      ],
+      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBKEY"
+    }
+  }
+}

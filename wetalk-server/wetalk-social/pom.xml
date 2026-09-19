@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-social</artifactId>
+    <name>wetalk-social</name>
+    <description>朋友圈/动态</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- 好友圈：动态可见性（feed = 好友 + 自己） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-friend</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- 作者信息解析 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-user</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+    </dependencies>
+</project>

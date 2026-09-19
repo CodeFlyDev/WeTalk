@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-app</artifactId>
+    <name>wetalk-app</name>
+    <description>启动模块（IM 主链路 core 服务：auth/user/friend/group/message/voip/...；AI 域已拆分为 wetalk-ai-app）</description>
+
+    <dependencies>
+        <!-- 内部模块 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-user</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-friend</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-group</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-file</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-voip</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-social</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-channel</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-ach</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-game</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-open</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-stat</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-wallet</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- Prometheus 指标暴露（/actuator/prometheus，Phase 8 可观测性） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- Nacos 注册发现 + Sentinel 流控（Phase 8 微服务化治理） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

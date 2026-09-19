@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wetalk</groupId>
+        <artifactId>wetalk-server</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wetalk-voip</artifactId>
+    <name>wetalk-voip</name>
+    <description>音视频信令（WebRTC 一对一，STOMP 通道转发；Mediasoup SFU 后续接入）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-common</artifactId>
+        </dependency>
+        <!-- 复用 message 模块的在在线表（PresenceService）与好友防腐接口（FriendPort） -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-message</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <!-- 语音房间元数据（t_voice_room，JPA ddl-auto 自动建表） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- 房主信息解析 -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-user</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- CurrentUser -->
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

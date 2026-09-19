@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.wetalk</groupId>
+    <artifactId>wetalk-server</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>wetalk-server</name>
+    <description>WeTalk IM 平台后端（模块化单体 → 微服务演进）</description>
+
+    <modules>
+        <module>wetalk-common</module>
+        <module>wetalk-auth</module>
+        <module>wetalk-user</module>
+        <module>wetalk-friend</module>
+        <module>wetalk-group</module>
+        <module>wetalk-message</module>
+        <module>wetalk-file</module>
+        <module>wetalk-voip</module>
+        <module>wetalk-social</module>
+        <module>wetalk-channel</module>
+        <module>wetalk-ach</module>
+        <module>wetalk-game</module>
+        <module>wetalk-open</module>
+        <module>wetalk-stat</module>
+        <module>wetalk-wallet</module>
+        <module>wetalk-ai</module>
+        <module>wetalk-ai-app</module>
+        <module>wetalk-gateway</module>
+        <module>wetalk-app</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jjwt.version>0.12.6</jjwt.version>
+        <minio.version>8.5.12</minio.version>
+        <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
+        <!-- Spring Cloud（Gateway，与 Boot 3.4 官方配对）+ Spring Cloud Alibaba（Nacos/Sentinel） -->
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2023.0.3.3</spring-cloud-alibaba.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM（在前：spring-cloud-commons 等对齐 2024.0.0） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba BOM（Nacos 注册发现 + Sentinel 流控） -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 内部模块统一版本管理 -->
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-user</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-auth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-message</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-friend</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wetalk</groupId>
+                <artifactId>wetalk-group</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- JWT（本地认证，Phase 2；Keycloak SSO 在 P3 开放平台阶段接入） -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- 对象存储（presigned URL 直传） -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+
+            <!-- RocketMQ（红包事务消息；5.x broker + Spring Boot 3 适配） -->
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-spring-boot-starter</artifactId>
+                <version>${rocketmq-spring.version}</version>
+            </dependency>
+            <!-- 后续按需在此登记 gRPC / Spring Cloud / Spring AI BOM（Phase 3-8） -->
+        </dependencies>
+    </dependencyManagement>
+</project>

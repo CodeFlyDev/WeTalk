@@ -1,0 +1,259 @@
+import { useEffect, useState } from 'react'
+import { Info, Lock, PenTool, Phone, Search, Sparkles, Video } from 'lucide-react'
+import Sidebar from '@/components/chat/Sidebar'
+import MessageList from '@/components/chat/MessageList'
+import ChatInput from '@/components/chat/ChatInput'
+import SearchPanel from '@/components/chat/SearchPanel'
+import PinnedBar from '@/components/chat/PinnedBar'
+import GroupInfoDialog from '@/components/chat/GroupInfoDialog'
+import SummaryDialog from '@/components/chat/SummaryDialog'
+import WhiteboardDialog from '@/components/chat/WhiteboardDialog'
+import GameDialog from '@/components/chat/GameDialog'
+import AiChatPanel from '@/components/ai/AiChatPanel'
+import CallOverlay from '@/components/call/CallOverlay'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { ensureRegistered, fingerprint } from '@/lib/e2ee'
+import { useChatStore } from '@/store/chat'
+import { useAuthStore } from '@/store/auth'
+import { useCallStore } from '@/webrtc/call'
+import { socket, type WsStatus } from '@/ws/socket'
+
+/** 主框架：左侧会话列表 + 右侧聊天区 */
+export default function ChatPage() {
+  const init = useChatStore((s) => s.init)
+  const initialized = useChatStore((s) => s.initialized)
+  const handleIncoming = useChatStore((s) => s.handleIncoming)
+  const handleNotify = useChatStore((s) => s.handleNotify)
+  const activeId = useChatStore((s) => s.activeId)
+  const conversations = useChatStore((s) => s.conversations)
+  const typingMap = useChatStore((s) => s.typing[activeId ?? ''])
+  const friendById = useChatStore((s) => s.friendById)
+  const selfId = useAuthStore((s) => s.user?.id)
+  const startCall = useCallStore((s) => s.startCall)
+  const startMeeting = useCallStore((s) => s.startMeeting)
+  const [wsStatus, setWsStatus] = useState<WsStatus>(socket.status)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false)
+  const [gameOpen, setGameOpen] = useState(false)
+
+  useEffect(() => {
+    void init()
+    // E2EE：注册本机密钥对（失败静默，不阻塞主链路）
+    void ensureRegistered()
+    // WS 接线：登录后建立连接，回调解绑由 disconnect 前置换
+    socket.onMessage = handleIncoming
+    socket.onNotify = handleNotify
+    socket.onStatusChange = setWsStatus
+    const token = useAuthStore.getState().currentAccessToken()
+    if (token) socket.connect(token)
+    // 五子棋入口（ChatInput Gamepad2 按钮派发）
+    const onGameOpen = () => setGameOpen(true)
+    window.addEventListener('wetalk:game-open', onGameOpen)
+    return () => {
+      socket.disconnect()
+      window.removeEventListener('wetalk:game-open', onGameOpen)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const active = conversations.find((c) => c.id === activeId) ?? null
+
+  /** 输入中提示：dm 显示「对方正在输入…」，群显示「张三、李四 正在输入…」 */
+  const typingNames = active
+    ? Object.entries(typingMap ?? {})
+        .filter(([, exp]) => (exp as number) > Date.now())
+        .map(([uid]) => {
+          const id = Number(uid)
+          if (id === selfId) return null
+          const f = friendById[id]
+          if (f) return f.nickname || f.username
+          const member = active.groupId
+            ? useChatStore.getState().groups.find((g) => g.id === active.groupId)?.members.find((mm) => mm.userId === id)
+            : undefined
+          return member ? member.nickname || member.username : `用户 ${id}`
+        })
+        .filter((n): n is string => n !== null)
+    : []
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar wsStatus={wsStatus} />
+      <main className="flex min-w-0 flex-1 flex-col">
+        {active ? (
+          <>
+            <header className="flex h-14 shrink-0 items-center border-b bg-card px-4">
+              <div className="min-w-0">
+                <h1 className="truncate text-sm font-semibold">{active.name}</h1>
+                {typingNames.length > 0 && (
+                  <p className="truncate text-[11px] text-emerald-600 dark:text-emerald-400">
+                    {active.type === 'dm'
+                      ? '对方正在输入…'
+                      : `${typingNames.slice(0, 2).join('、')}${typingNames.length > 2 ? ' 等' : ''} 正在输入…`}
+                  </p>
+                )}
+              </div>
+              <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                {active.type === 'group' ? '群聊' : active.type === 'ai' ? 'AI' : '单聊'}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
+                {active.type !== 'ai' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="协作白板"
+                    onClick={() => setWhiteboardOpen(true)}
+                  >
+                    <PenTool className="h-4 w-4" />
+                  </Button>
+                )}
+                {active.type !== 'ai' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="AI 聊天摘要"
+                    onClick={() => setSummaryOpen(true)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                )}
+                {active.type === 'dm' && active.peerId != null && <E2eeLock peerId={active.peerId} />}
+                {active.type === 'group' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="群信息"
+                    onClick={() => setGroupInfoOpen(true)}
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="在会话中查找"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+                {active.type === 'dm' && active.peerId != null && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="语音通话"
+                      onClick={() => void startCall(active.peerId!, active.name, 'AUDIO')}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="视频通话"
+                      onClick={() => void startCall(active.peerId!, active.name, 'VIDEO')}
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+                {active.type === 'group' && active.groupId != null && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="群会议"
+                    onClick={() => void startMeeting(active.groupId!, active.name, 'VIDEO')}
+                  >
+                    <Video className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            </header>
+            {searchOpen && (
+              <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} conversation={active} />
+            )}
+            {initialized && active.type === 'ai' && <AiChatPanel />}
+            {initialized && active.type !== 'ai' && (
+              <>
+                <PinnedBar conversation={active} />
+                <MessageList conversation={active} />
+                <ChatInput conversation={active} />
+              </>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
+            <p className="text-4xl">💬</p>
+            <p className="text-sm">选择一个会话开始聊天</p>
+            {!initialized && <p className="text-xs">加载中…</p>}
+          </div>
+        )}
+      </main>
+      {/* 通话浮层：来电弹窗 / 通话中面板（任意会话可接听） */}
+      <CallOverlay />
+      {/* 群信息：公告 + 群文件 */}
+      {active?.type === 'group' && (
+        <GroupInfoDialog
+          conversation={active}
+          open={groupInfoOpen}
+          onClose={() => setGroupInfoOpen(false)}
+        />
+      )}
+      {/* AI 聊天摘要 */}
+      {active && active.type !== 'ai' && (
+        <SummaryDialog
+          conversationId={active.id}
+          conversationName={active.name}
+          open={summaryOpen}
+          onClose={() => setSummaryOpen(false)}
+        />
+      )}
+      {/* 协作白板 */}
+      {active && active.type !== 'ai' && (
+        <WhiteboardDialog
+          conversation={active}
+          open={whiteboardOpen}
+          onClose={() => setWhiteboardOpen(false)}
+        />
+      )}
+      {/* 五子棋对局（单聊；收到邀请自动弹窗） */}
+      {active?.type === 'dm' && (
+        <GameDialog
+          key={active.id}
+          conversation={active}
+          open={gameOpen}
+          onOpenChange={setGameOpen}
+        />
+      )}
+    </div>
+  )
+}
+
+/** 单聊端到端加密开关：点击切换（本机记忆），开启后悬停显示密钥指纹供双方核对 */
+function E2eeLock({ peerId }: { peerId: number }) {
+  const key = `wetalk.e2ee.on.${peerId}`
+  const [on, setOn] = useState(() => localStorage.getItem(key) === '1')
+  const [fp, setFp] = useState('')
+
+  useEffect(() => {
+    setOn(localStorage.getItem(key) === '1')
+    if (localStorage.getItem(key) === '1') void fingerprint(peerId).then(setFp)
+  }, [key, peerId])
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      title={on ? `端到端加密已开启${fp ? `（指纹 ${fp}）` : ''}` : '端到端加密已关闭（点击开启）'}
+      onClick={() =>
+        setOn((v) => {
+          localStorage.setItem(key, v ? '0' : '1')
+          return !v
+        })
+      }
+    >
+      <Lock className={cn('h-4 w-4', on && 'text-emerald-500')} />
+    </Button>
+  )
+}

@@ -1,0 +1,82 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wetalk-core
+
+  # ---- Nacos 注册发现 + Sentinel 流控（Phase 8；本机裸跑可 NACOS_ENABLED=false）----
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_ADDR:localhost:8848}
+    sentinel:
+      enabled: ${SENTINEL_ENABLED:true}
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8858}
+
+  # ---- MySQL（结构化数据：用户/关系/群组/钱包）----
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/wetalk?useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USERNAME:wetalk}
+    password: ${MYSQL_PASSWORD:}
+
+  # ---- JPA：P0 开发模式自动建表（t_user / t_friend_request / t_friendship / t_group / t_group_member），P3 起换 Flyway ----
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+
+  # ---- MongoDB（消息历史，时间序列）----
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/wetalk}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+
+  # ---- Kafka（异步消息 / 离线投递 / 事件总线）----
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  # ---- Elasticsearch（消息全文检索，应用层双写；compose 默认 8.14.3 无安全模式）----
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+
+# ---- RocketMQ（红包事务消息：半消息 → 本地事务 → 回查；compose 默认 5.3.1）----
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+  producer:
+    group: wetalk-producer
+    send-message-timeout: 5000
+
+# ---- WeTalk 自有配置 ----
+wetalk:
+  jwt:
+    # HS256 密钥，不少于 32 字节；生产必须通过环境变量注入
+    secret: ${JWT_SECRET:dev-jwt-secret-change-me-32bytes!!}
+    access-expire-minutes: 120
+    refresh-expire-days: 14
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: wetalk
+  # AI 域配置（whisper/ollama）随 wetalk-ai 拆分迁移至 wetalk-ai-app
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
