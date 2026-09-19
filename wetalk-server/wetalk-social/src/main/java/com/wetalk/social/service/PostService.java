@@ -41,17 +41,20 @@ public class PostService {
     private final PostCommentRepository commentRepository;
     private final FriendService friendService;
     private final UserService userService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public PostService(PostRepository postRepository,
                        PostLikeRepository likeRepository,
                        PostCommentRepository commentRepository,
                        FriendService friendService,
-                       UserService userService) {
+                       UserService userService,
+                       org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
         this.commentRepository = commentRepository;
         this.friendService = friendService;
         this.userService = userService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -69,6 +72,7 @@ public class PostService {
         post.setContent(text.length() > 2000 ? text.substring(0, 2000) : text);
         post.setImageKeys(String.join(",", keys));
         post = postRepository.save(post);
+        eventPublisher.publishEvent(new com.wetalk.common.AchieveEvent(userId, "FIRST_POST"));
         return toView(post, userId);
     }
 

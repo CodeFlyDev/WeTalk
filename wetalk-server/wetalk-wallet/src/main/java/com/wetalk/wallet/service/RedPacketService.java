@@ -66,6 +66,7 @@ public class RedPacketService {
     private final GroupPort groupPort;
     private final UserService userService;
     private final RocketMQTemplate rocketMQTemplate;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public RedPacketService(RedPacketRepository redPacketRepository,
                             RedPacketItemRepository itemRepository,
@@ -77,7 +78,8 @@ public class RedPacketService {
                             FriendPort friendPort,
                             GroupPort groupPort,
                             UserService userService,
-                            RocketMQTemplate rocketMQTemplate) {
+                            RocketMQTemplate rocketMQTemplate,
+                            org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.redPacketRepository = redPacketRepository;
         this.itemRepository = itemRepository;
         this.txLogRepository = txLogRepository;
@@ -89,6 +91,7 @@ public class RedPacketService {
         this.groupPort = groupPort;
         this.userService = userService;
         this.rocketMQTemplate = rocketMQTemplate;
+        this.eventPublisher = eventPublisher;
     }
 
     // ---------------- 发红包 ----------------
@@ -121,6 +124,7 @@ public class RedPacketService {
                 .setHeader(HEADER_TX_KEY, redPacketId)
                 .build();
         rocketMQTemplate.sendMessageInTransaction(TOPIC, message, cmd);
+        eventPublisher.publishEvent(new com.wetalk.common.AchieveEvent(senderId, "FIRST_RED_PACKET"));
         return redPacketId;
     }
 

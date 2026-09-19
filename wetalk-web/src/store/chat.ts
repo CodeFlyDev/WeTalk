@@ -394,9 +394,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } else if (payload.event === 'FRIEND_ACCEPTED') {
       toast.success('好友请求已通过')
       void get().refreshFriends()
+    } else if (payload.event === 'ACHIEVEMENT') {
+      const data = payload.data as { code: string; title: string; description: string; emoji: string } | null
+      if (data?.title) {
+        toast.success(`${data.emoji ?? '🏅'} 解锁成就「${data.title}」`, { description: data.description })
+      }
     } else if (payload.event === 'WHITEBOARD') {
       // 白板事件转发给 WhiteboardDialog（以 conversationId 过滤）
       window.dispatchEvent(new CustomEvent('wetalk:whiteboard', { detail: payload.data }))
+    } else if (payload.event === 'GAME') {
+      // 五子棋事件转发给 GameDialog（以 conversationId 过滤）
+      window.dispatchEvent(new CustomEvent('wetalk:game', { detail: payload.data }))
     } else if (payload.event === 'TYPING') {
       const data = payload.data as { conversationId: string; senderId: number }
       const selfId = useAuthStore.getState().user?.id

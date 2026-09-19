@@ -32,15 +32,18 @@ public class VoipSignalingService {
     private final PresenceService presenceService;
     private final FriendPort friendPort;
     private final GroupPort groupPort;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public VoipSignalingService(SimpMessagingTemplate messagingTemplate,
                                 PresenceService presenceService,
                                 FriendPort friendPort,
-                                GroupPort groupPort) {
+                                GroupPort groupPort,
+                                org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.messagingTemplate = messagingTemplate;
         this.presenceService = presenceService;
         this.friendPort = friendPort;
         this.groupPort = groupPort;
+        this.eventPublisher = eventPublisher;
     }
 
     public void relay(Long fromUserId, VoipSignal signal) {
@@ -70,10 +73,15 @@ public class VoipSignalingService {
             return;
         }
 
-        // fromUserId 以服务端解析为准，防止伪造他人身份；groupId 强制清空防串扰
+        // fromUserId 以服务端解析为准，防止伪造他人身份；groupId/roomId 强制清空防串扰
         VoipSignal out = new VoipSignal(signal.peerId(), signal.callId(), signal.event(),
-                signal.media(), null, signal.payload(), fromUserId);
+                signal.media(), null, signal.payload(), fromUserId, null);
         sendToUser(signal.peerId(), out);
+        // 通话发起成就（ach 侧幂等）
+        if (signal.event() == VoipEvent.INVITE) {
+            eventPublisher.publishEvent(new com.wetalk.common.AchieveEvent(fromUserId,
+                    "VIDEO".equals(signal.media()) ? "FIRST_VIDEO" : "FIRST_VOICE"));
+        }
     }
 
     /** 群会议信令：校验群成员后转发给群内其他在线成员（mesh 无房间记账） */
@@ -89,9 +97,9 @@ public class VoipSignalingService {
             return;
         }
 
-        // fromUserId 服务端盖章，peerId 清空（广播语义），groupId 保留
+        // fromUserId 服务端盖章，peerId/roomId 清空（广播语义），groupId 保留
         VoipSignal out = new VoipSignal(null, signal.callId(), signal.event(),
-                signal.media(), signal.groupId(), signal.payload(), fromUserId);
+                signal.media(), signal.groupId(), signal.payload(), fromUserId, null);
         int sent = 0;
         for (Long memberId : groupPort.memberIds(signal.groupId())) {
             if (memberId.equals(fromUserId) || !presenceService.isOnline(memberId)) {
@@ -107,12 +115,12 @@ public class VoipSignalingService {
     private static VoipSignal offlineOf(VoipSignal signal) {
         // fromUserId=对端 ID：客户端统一按「信令来源」处理
         return new VoipSignal(signal.peerId(), signal.callId(), VoipEvent.OFFLINE,
-                signal.media(), null, null, signal.peerId());
+                signal.media(), null, null, signal.peerId(), null);
     }
 
     private static VoipSignal errorOf(VoipSignal signal, String reason) {
         return new VoipSignal(signal.peerId(), signal.callId(), VoipEvent.ERROR,
-                signal.media(), null, reason, signal.peerId());
+                signal.media(), null, reason, signal.peerId(), null);
     }
 
     private void sendToUser(Long userId, VoipSignal signal) {

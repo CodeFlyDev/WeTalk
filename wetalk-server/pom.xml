@@ -28,6 +28,11 @@
         <module>wetalk-file</module>
         <module>wetalk-voip</module>
         <module>wetalk-social</module>
+        <module>wetalk-channel</module>
+        <module>wetalk-ach</module>
+        <module>wetalk-game</module>
+        <module>wetalk-open</module>
+        <module>wetalk-stat</module>
         <module>wetalk-wallet</module>
         <module>wetalk-ai</module>
         <module>wetalk-gateway</module>

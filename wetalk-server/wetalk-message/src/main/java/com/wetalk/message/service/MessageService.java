@@ -45,6 +45,7 @@ public class MessageService {
     private final MessageDeliveryService deliveryService;
     private final UnreadService unreadService;
     private final MessageIndexer searchIndexer;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public MessageService(MessageRepository messageRepository,
                           UserService userService,
@@ -52,7 +53,8 @@ public class MessageService {
                           GroupPort groupPort,
                           MessageDeliveryService deliveryService,
                           UnreadService unreadService,
-                          MessageIndexer searchIndexer) {
+                          MessageIndexer searchIndexer,
+                          org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.friendPort = friendPort;
@@ -60,6 +62,7 @@ public class MessageService {
         this.deliveryService = deliveryService;
         this.unreadService = unreadService;
         this.searchIndexer = searchIndexer;
+        this.eventPublisher = eventPublisher;
     }
 
     public SendResult send(Long senderId, SendMessageRequest request) {
@@ -131,7 +134,24 @@ public class MessageService {
         messageRepository.save(doc);
         deliveryService.deliver(doc, recipients);
         searchIndexer.index(doc);
+        publishAchievement(senderId, request.type());
+        eventPublisher.publishEvent(new com.wetalk.common.WebhookEvent(
+                doc.getId(), doc.getConversationId(), senderId, doc.getReceiverId(),
+                doc.getGroupId(), request.type().name(), request.content(), doc.getCreatedAt()));
         return toResult(doc);
+    }
+
+    /** 消息发送成就触发：TEXT→FIRST_MESSAGE、VOICE→FIRST_VOICE、EMOJI→FIRST_STICKER（ach 侧幂等） */
+    private void publishAchievement(Long senderId, MessageType type) {
+        String code = switch (type) {
+            case TEXT -> "FIRST_MESSAGE";
+            case VOICE -> "FIRST_VOICE";
+            case EMOJI -> "FIRST_STICKER";
+            default -> null;
+        };
+        if (code != null) {
+            eventPublisher.publishEvent(new com.wetalk.common.AchieveEvent(senderId, code));
+        }
     }
 
     /**

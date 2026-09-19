@@ -61,6 +61,31 @@
         </dependency>
         <dependency>
             <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-channel</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-ach</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-game</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-open</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
+            <artifactId>wetalk-stat</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wetalk</groupId>
             <artifactId>wetalk-wallet</artifactId>
             <version>${project.version}</version>
         </dependency>

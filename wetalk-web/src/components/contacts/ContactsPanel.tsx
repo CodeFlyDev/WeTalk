@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ListTodo, Star, UserPlus, Users, X } from 'lucide-react'
+import { Award, Check, ListTodo, Plug, Star, UserPlus, Users, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn, formatTime, ConversationIds } from '@/lib/utils'
@@ -7,15 +7,19 @@ import { useAuthStore } from '@/store/auth'
 import { useChatStore } from '@/store/chat'
 import AddFriendDialog from './AddFriendDialog'
 import CreateGroupDialog from './CreateGroupDialog'
+import AchievementsDialog from './AchievementsDialog'
+import OpenPlatformDialog from './OpenPlatformDialog'
 import FavoritesDialog from '@/components/chat/FavoritesDialog'
 import TodoDialog from '@/components/chat/TodoDialog'
 
-/** 通讯录：好友请求 / 好友列表 / 群列表 + 添加好友 / 创建群 / 我的收藏 */
+/** 通讯录：好友请求 / 好友列表 / 群列表 + 添加好友 / 创建群 / 我的收藏 / 我的成就 / 开放平台 */
 export default function ContactsPanel() {
   const [addFriendOpen, setAddFriendOpen] = useState(false)
   const [createGroupOpen, setCreateGroupOpen] = useState(false)
   const [favoritesOpen, setFavoritesOpen] = useState(false)
   const [todoOpen, setTodoOpen] = useState(false)
+  const [achOpen, setAchOpen] = useState(false)
+  const [openPlatOpen, setOpenPlatOpen] = useState(false)
 
   const selfId = useAuthStore((s) => s.user!.id)
   const friends = useChatStore((s) => s.friends)
@@ -55,6 +59,24 @@ export default function ContactsPanel() {
           <ListTodo className="h-5 w-5" />
         </span>
         我的待办
+      </button>
+      <button
+        className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+        onClick={() => setAchOpen(true)}
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-500/10 text-violet-500">
+          <Award className="h-5 w-5" />
+        </span>
+        我的成就
+      </button>
+      <button
+        className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+        onClick={() => setOpenPlatOpen(true)}
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500/10 text-sky-500">
+          <Plug className="h-5 w-5" />
+        </span>
+        开放平台
       </button>
 
       {/* 好友请求 */}
@@ -153,6 +175,8 @@ export default function ContactsPanel() {
       <CreateGroupDialog open={createGroupOpen} onClose={() => setCreateGroupOpen(false)} />
       <FavoritesDialog open={favoritesOpen} onClose={() => setFavoritesOpen(false)} />
       <TodoDialog open={todoOpen} onClose={() => setTodoOpen(false)} />
+      <AchievementsDialog open={achOpen} onClose={() => setAchOpen(false)} />
+      <OpenPlatformDialog open={openPlatOpen} onClose={() => setOpenPlatOpen(false)} />
     </div>
   )
 }

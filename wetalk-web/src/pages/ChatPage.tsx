@@ -8,6 +8,7 @@ import PinnedBar from '@/components/chat/PinnedBar'
 import GroupInfoDialog from '@/components/chat/GroupInfoDialog'
 import SummaryDialog from '@/components/chat/SummaryDialog'
 import WhiteboardDialog from '@/components/chat/WhiteboardDialog'
+import GameDialog from '@/components/chat/GameDialog'
 import AiChatPanel from '@/components/ai/AiChatPanel'
 import CallOverlay from '@/components/call/CallOverlay'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ export default function ChatPage() {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false)
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [whiteboardOpen, setWhiteboardOpen] = useState(false)
+  const [gameOpen, setGameOpen] = useState(false)
 
   useEffect(() => {
     void init()
@@ -47,7 +49,13 @@ export default function ChatPage() {
     socket.onStatusChange = setWsStatus
     const token = useAuthStore.getState().currentAccessToken()
     if (token) socket.connect(token)
-    return () => socket.disconnect()
+    // 五子棋入口（ChatInput Gamepad2 按钮派发）
+    const onGameOpen = () => setGameOpen(true)
+    window.addEventListener('wetalk:game-open', onGameOpen)
+    return () => {
+      socket.disconnect()
+      window.removeEventListener('wetalk:game-open', onGameOpen)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -207,6 +215,15 @@ export default function ChatPage() {
           conversation={active}
           open={whiteboardOpen}
           onClose={() => setWhiteboardOpen(false)}
+        />
+      )}
+      {/* 五子棋对局（单聊；收到邀请自动弹窗） */}
+      {active?.type === 'dm' && (
+        <GameDialog
+          key={active.id}
+          conversation={active}
+          open={gameOpen}
+          onOpenChange={setGameOpen}
         />
       )}
     </div>

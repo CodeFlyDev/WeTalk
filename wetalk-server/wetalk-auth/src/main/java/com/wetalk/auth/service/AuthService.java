@@ -3,11 +3,13 @@ package com.wetalk.auth.service;
 import com.wetalk.auth.dto.RegisterRequest;
 import com.wetalk.auth.dto.TokenResponse;
 import com.wetalk.auth.jwt.JwtTokenService;
+import com.wetalk.common.AchieveEvent;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
 import com.wetalk.user.dto.UserView;
 import com.wetalk.user.entity.UserAccount;
 import com.wetalk.user.service.UserService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,17 +20,21 @@ public class AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtTokenService jwtTokenService) {
+    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtTokenService jwtTokenService,
+                       ApplicationEventPublisher eventPublisher) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public TokenResponse register(RegisterRequest request) {
         UserAccount user = userService.createUser(
                 request.username(), passwordEncoder.encode(request.password()), request.nickname());
+        eventPublisher.publishEvent(new AchieveEvent(user.getId(), "WELCOME"));
         return buildTokenResponse(user);
     }
 

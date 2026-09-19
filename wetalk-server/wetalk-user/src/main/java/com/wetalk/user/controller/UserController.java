@@ -1,5 +1,6 @@
 package com.wetalk.user.controller;
 
+import com.wetalk.auth.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.user.dto.UserView;
 import com.wetalk.user.service.UserService;
@@ -28,6 +29,16 @@ public class UserController {
     @GetMapping("/search")
     public ApiResult<List<UserView>> search(@RequestParam String keyword) {
         return ApiResult.ok(userService.search(keyword));
+    }
+
+    /** 更新我的头像（objectKey 来自 MinIO presign 直传） */
+    @org.springframework.web.bind.annotation.PutMapping("/me/avatar")
+    public ApiResult<UserView> updateAvatar(@org.springframework.web.bind.annotation.RequestBody
+                                            AvatarRequest request) {
+        return ApiResult.ok(userService.updateAvatar(CurrentUser.id(), request.objectKey()));
+    }
+
+    public record AvatarRequest(String objectKey) {
     }
 
     @GetMapping("/{id}")

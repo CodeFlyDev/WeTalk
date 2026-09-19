@@ -1,17 +1,21 @@
 import { Client, type IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
-import type { MessageView, NotifyPayload, SendResult, VoipSignal } from '@/types/api'
+import type { ChannelMessageView, MessageView, NotifyPayload, SendResult, VoipSignal } from '@/types/api'
 
 export type WsStatus = 'connecting' | 'open' | 'closed'
 
 /**
  * STOMP 连接管理：SockJS 传输 + 自动重连 + /app/heartbeat 在线续期。
- * 对齐后端：握手 ?token=JWT；订阅 /user/queue/{messages,ack,notify,voip}。
+ * 对齐后端：握手 ?token=JWT；订阅 /user/queue/{messages,ack,notify,voip} + /topic/channel.{id}。
  */
 class SocketManager {
   private client: Client | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private accessToken: string | null = null
+  /** 频道动态订阅：channelId → STOMP subscription（离开频道页退订） */
+  private channelSubs = new Map<number, IMessage>()
+  /** voip 信令多播（点对点/会议与语音房间各自消费，按 roomId 字段分流） */
+  private voipListeners = new Set<(signal: VoipSignal) => void>()
 
   status: WsStatus = 'closed'
   onStatusChange: ((status: WsStatus) => void) | null = null
@@ -19,6 +23,13 @@ class SocketManager {
   onAck: ((ack: SendResult) => void) | null = null
   onNotify: ((payload: NotifyPayload) => void) | null = null
   onVoip: ((signal: VoipSignal) => void) | null = null
+  onChannelMessage: ((view: ChannelMessageView) => void) | null = null
+
+  /** 注册 voip 信令监听（返回取消函数）；与 onVoip 单播并存 */
+  onVoipMessage(listener: (signal: VoipSignal) => void) {
+    this.voipListeners.add(listener)
+    return () => this.voipListeners.delete(listener)
+  }
 
   connect(accessToken: string) {
     if (this.client && this.accessToken === accessToken) return
@@ -48,6 +59,7 @@ class SocketManager {
 
   disconnect() {
     this.stopHeartbeat()
+    this.clearChannelSubs()
     if (this.client) {
       this.client.deactivate().catch(() => undefined)
       this.client = null
@@ -80,7 +92,11 @@ class SocketManager {
     })
     this.client.subscribe('/user/queue/voip', (msg: IMessage) => {
       try {
-        this.onVoip?.(JSON.parse(msg.body) as VoipSignal)
+        const signal = JSON.parse(msg.body) as VoipSignal
+        this.onVoip?.(signal)
+        for (const listener of this.voipListeners) {
+          listener(signal)
+        }
       } catch {
         // ignore
       }
@@ -115,6 +131,53 @@ class SocketManager {
         destination: '/app/whiteboard',
         body: JSON.stringify({ conversationId, event, data })
       })
+    }
+  }
+
+  /** 频道动态订阅（进入频道页时调用；同一频道幂等） */
+  subscribeChannel(channelId: number) {
+    if (!this.client?.connected || this.channelSubs.has(channelId)) return
+    this.channelSubs.set(
+      channelId,
+      this.client.subscribe(`/topic/channel.${channelId}`, (msg: IMessage) => {
+        try {
+          this.onChannelMessage?.(JSON.parse(msg.body) as ChannelMessageView)
+        } catch {
+          // ignore
+        }
+      })
+    )
+  }
+
+  /** 频道退订（离开频道页时调用） */
+  unsubscribeChannel(channelId: number) {
+    this.channelSubs.get(channelId)?.unsubscribe()
+    this.channelSubs.delete(channelId)
+  }
+
+  /** 断线时清理全部频道订阅（重连后由页面 effect 重新订阅） */
+  clearChannelSubs() {
+    for (const sub of this.channelSubs.values()) {
+      try {
+        sub.unsubscribe()
+      } catch {
+        // ignore
+      }
+    }
+    this.channelSubs.clear()
+  }
+
+  /** 语音房间信令发送：/app/voip.room */
+  sendRoom(signal: Omit<VoipSignal, 'fromUserId'>) {
+    if (this.client?.connected) {
+      this.client.publish({ destination: '/app/voip.room', body: JSON.stringify(signal) })
+    }
+  }
+
+  /** 五子棋对局信令：/app/game（INVITE/ACCEPT/REJECT/CANCEL/MOVE/RESIGN） */
+  sendGame(request: { conversationId: string; event: string; gameId?: string | null; idx?: number | null }) {
+    if (this.client?.connected) {
+      this.client.publish({ destination: '/app/game', body: JSON.stringify(request) })
     }
   }
 

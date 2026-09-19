@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import { Clock, FileUp, Flame, Image as ImageIcon, Mic, Smile, Sticker, Trash2, Send as SendIcon, Video as VideoIcon, Wallet, X } from 'lucide-react'
+import { Clock, FileUp, Flame, Gamepad2, Image as ImageIcon, Mic, Smile, Sticker, Trash2, Send as SendIcon, Video as VideoIcon, Wallet, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { encrypt } from '@/lib/e2ee'
@@ -8,6 +8,7 @@ import { EmojiPicker } from './EmojiPicker'
 import RedPacketDialog from './RedPacketDialog'
 import ScheduleDialog from './ScheduleDialog'
 import StickerDialog from './StickerDialog'
+import FilterPickerDialog from './FilterPickerDialog'
 import { previewOf } from './MessageItem'
 import type { Conversation, SendOptions } from '@/store/chat'
 import { useChatStore } from '@/store/chat'
@@ -38,6 +39,9 @@ export default function ChatInput({ conversation }: { conversation: Conversation
   const [rpOpen, setRpOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [stickerOpen, setStickerOpen] = useState(false)
+  /** 图片滤镜：选图先过滤镜弹窗再发送 */
+  const [filterFile, setFilterFile] = useState<File | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
   /** 阅后即焚（dm 限定，per-conversation 记忆） */
   const burnKey = `wetalk.burn.${conversation.id}`
   const [burnOn, setBurnOn] = useState(() => localStorage.getItem(burnKey) === '1')
@@ -216,6 +220,11 @@ export default function ChatInput({ conversation }: { conversation: Conversation
           toast.error('读取本地文件失败')
           return
         }
+        if (kind === 'IMAGE') {
+          setFilterFile(file)
+          setFilterOpen(true)
+          return
+        }
         const opts: SendOptions = replyTo ? { replyToId: replyTo.id } : {}
         setReplyTo(null)
         await sendFile(target, file, kind, opts)
@@ -230,9 +239,23 @@ export default function ChatInput({ conversation }: { conversation: Conversation
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+    if (kind === 'IMAGE') {
+      setFilterFile(file)
+      setFilterOpen(true)
+      return
+    }
     const opts: SendOptions = replyTo ? { replyToId: replyTo.id } : {}
     setReplyTo(null)
     await sendFile(target, file, kind, opts)
+  }
+
+  /** 滤镜确认 → 烘焙后的图片走原发送链路 */
+  function confirmFiltered(file: File) {
+    setFilterOpen(false)
+    setFilterFile(null)
+    const opts: SendOptions = replyTo ? { replyToId: replyTo.id } : {}
+    setReplyTo(null)
+    void sendFile(target, file, 'IMAGE', opts)
   }
 
   return (
@@ -301,6 +324,16 @@ export default function ChatInput({ conversation }: { conversation: Conversation
               <Button
                 variant="ghost"
                 size="icon"
+                title="五子棋对局"
+                onClick={() => window.dispatchEvent(new CustomEvent('wetalk:game-open'))}
+              >
+                <Gamepad2 className="h-5 w-5" />
+              </Button>
+            )}
+            {conversation.type === 'dm' && (
+              <Button
+                variant="ghost"
+                size="icon"
                 title={burnOn ? '阅后即焚：已开启' : '阅后即焚：已关闭'}
                 onClick={toggleBurn}
               >
@@ -338,6 +371,15 @@ export default function ChatInput({ conversation }: { conversation: Conversation
       <RedPacketDialog conversation={conversation} open={rpOpen} onClose={() => setRpOpen(false)} />
       <ScheduleDialog conversation={conversation} open={scheduleOpen} onClose={() => setScheduleOpen(false)} />
       <StickerDialog conversation={conversation} open={stickerOpen} onClose={() => setStickerOpen(false)} />
+      <FilterPickerDialog
+        file={filterFile}
+        open={filterOpen}
+        onClose={() => {
+          setFilterOpen(false)
+          setFilterFile(null)
+        }}
+        onConfirm={confirmFiltered}
+      />
 
       {recording ? (
         <div className="flex items-center gap-3 px-3 py-3">

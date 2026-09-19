@@ -1,5 +1,6 @@
 package com.wetalk.group.service;
 
+import com.wetalk.common.AchieveEvent;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
 import com.wetalk.group.dto.AnnouncementRequest;
@@ -12,6 +13,7 @@ import com.wetalk.group.repository.GroupRepository;
 import com.wetalk.message.port.GroupPort;
 import com.wetalk.user.dto.UserView;
 import com.wetalk.user.service.UserService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +29,16 @@ public class GroupService implements GroupPort {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository memberRepository;
     private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GroupService(GroupRepository groupRepository,
                         GroupMemberRepository memberRepository,
-                        UserService userService) {
+                        UserService userService,
+                        ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.memberRepository = memberRepository;
         this.userService = userService;
+        this.eventPublisher = eventPublisher;
     }
 
     /** 创建群：owner 自动入群，可带初始成员（去重、忽略不存在的用户） */
@@ -55,6 +60,7 @@ public class GroupService implements GroupPort {
                 }
             }
         }
+        eventPublisher.publishEvent(new AchieveEvent(ownerId, "FIRST_GROUP"));
         return toView(group);
     }
 

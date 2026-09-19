@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Images, LogOut, MessageSquare, Search, Users } from 'lucide-react'
+import { Bot, BarChart3, Hash, Images, LogOut, MessageSquare, Radio, Search, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn, formatTime } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth'
 import { useChatStore, type Conversation } from '@/store/chat'
 import ContactsPanel from '@/components/contacts/ContactsPanel'
 import GlobalSearchDialog from '@/components/chat/GlobalSearchDialog'
+import AvatarMakerDialog from '@/components/chat/AvatarMakerDialog'
 import type { WsStatus } from '@/ws/socket'
 
 type Tab = 'chats' | 'contacts'
@@ -21,6 +22,7 @@ const WS_LABEL: Record<WsStatus, string> = {
 export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
   const [tab, setTab] = useState<Tab>('chats')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const conversations = useChatStore((s) => s.conversations)
@@ -41,7 +43,9 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
     <aside className="flex w-72 shrink-0 flex-col border-r bg-card">
       {/* 顶部用户栏 + 连接状态 */}
       <div className="flex h-14 items-center gap-2 border-b px-3">
-        <Avatar name={user?.nickname || user?.username || '?'} size={34} src={user?.avatarUrl} />
+        <button onClick={() => setAvatarOpen(true)} title="更换头像" className="shrink-0">
+          <Avatar name={user?.nickname || user?.username || '?'} size={34} src={user?.avatarUrl} />
+        </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{user?.nickname || user?.username}</p>
           <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -56,6 +60,15 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
             {WS_LABEL[wsStatus]}
           </p>
         </div>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/voice')} title="语音房间">
+          <Radio className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/channels')} title="频道 · 社区">
+          <Hash className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/stats')} title="数据统计（管理员）">
+          <BarChart3 className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={() => navigate('/moments')} title="朋友圈">
           <Images className="h-4 w-4" />
         </Button>
@@ -125,6 +138,7 @@ export default function Sidebar({ wsStatus }: { wsStatus: WsStatus }) {
       )}
 
       <GlobalSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <AvatarMakerDialog open={avatarOpen} onClose={() => setAvatarOpen(false)} />
     </aside>
   )
 }

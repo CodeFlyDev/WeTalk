@@ -34,6 +34,18 @@ public class UserService {
         return repository.save(user);
     }
 
+    /** 更新头像（存 MinIO objectKey，前端经 /api/files/download-url 解析） */
+    @Transactional
+    public UserView updateAvatar(Long userId, String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "头像 objectKey 不能为空");
+        }
+        UserAccount user = requireById(userId);
+        user.setAvatarUrl(objectKey.strip());
+        repository.save(user);
+        return toView(user);
+    }
+
     @Transactional(readOnly = true)
     public UserAccount requireById(Long id) {
         return repository.findById(id)

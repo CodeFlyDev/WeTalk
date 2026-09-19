@@ -12,6 +12,8 @@ interface AuthState {
   login: (username: string, password: string) => Promise<void>
   register: (username: string, password: string, nickname: string) => Promise<void>
   logout: () => void
+  /** 本地更新用户信息（如换头像后同步持久化） */
+  setUser: (user: UserView) => void
   /** 供 socket 握手使用 */
   currentAccessToken: () => string | null
 }
@@ -64,6 +66,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     writeTokens(null)
     set({ user: null, accessToken: null })
+  },
+
+  setUser: (user) => {
+    const stored = readTokens()
+    if (stored) {
+      writeTokens({ ...stored, user })
+    }
+    set({ user })
   },
 
   currentAccessToken: () => get().accessToken ?? readTokens()?.accessToken ?? null

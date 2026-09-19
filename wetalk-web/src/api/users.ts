@@ -16,5 +16,9 @@ export const userApi = {
   /** 查询对方 E2EE 公钥（未注册返回 null） */
   getE2eeKey(userId: number) {
     return unwrap<string | null>(http.get(`/users/${userId}/e2ee-key`))
+  },
+  /** 更新我的头像（objectKey 来自 presign 直传） */
+  updateAvatar(objectKey: string) {
+    return unwrap<UserView>(http.put('/users/me/avatar', { objectKey }))
   }
 }

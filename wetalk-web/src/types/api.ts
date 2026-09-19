@@ -152,7 +152,31 @@ export interface RedPacketView {
 }
 
 /** ws /user/queue/notify 事件 */
-export type NotifyEvent = 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED' | 'TYPING' | 'WHITEBOARD'
+export type NotifyEvent =
+  | 'FRIEND_REQUEST'
+  | 'FRIEND_ACCEPTED'
+  | 'TYPING'
+  | 'WHITEBOARD'
+  | 'ACHIEVEMENT'
+  | 'GAME'
+
+/** 成就解锁通知（ACHIEVEMENT 事件 data） */
+export interface AchievementNotify {
+  code: string
+  title: string
+  description: string
+  emoji: string
+}
+
+/** 我的成就列表项（GET /api/achievements） */
+export interface AchievementView {
+  code: string
+  title: string
+  description: string
+  emoji: string
+  unlocked: boolean
+  unlockedAt: string | null
+}
 
 export interface NotifyPayload {
   event: NotifyEvent
@@ -192,6 +216,11 @@ export type VoipEvent =
   | 'ERROR'
   | 'MEET_JOIN'
   | 'MEET_LEAVE'
+  | 'ROOM_JOIN'
+  | 'ROOM_LEAVE'
+  | 'ROOM_JOINED'
+  | 'ROOM_PEER_JOINED'
+  | 'ROOM_PEER_LEFT'
 
 export type CallMedia = 'AUDIO' | 'VIDEO'
 
@@ -207,4 +236,100 @@ export interface VoipSignal {
   /** SDP / ICE 候选 JSON / 文本原因 */
   payload?: string | null
   fromUserId?: number | null
+  /** 语音房间 id（仅房间信令携带） */
+  roomId?: number | null
+}
+
+/* ---------- 语音房间 / 频道（Phase 7） ---------- */
+
+/** 语音房间（GET /api/voip/rooms） */
+export interface VoiceRoomView {
+  id: number
+  name: string
+  ownerId: number
+  ownerName: string
+  onlineCount: number
+  mine: boolean
+}
+
+/** 频道（GET /api/channels，后端返回 Map 结构） */
+export interface ChannelView {
+  id: number
+  name: string
+  description: string
+  ownerId: number
+  ownerName: string
+  memberCount: number
+  joined: boolean
+  isOwner: boolean
+  createdAt: string
+}
+
+/** 频道消息（REST 返回 + /topic/channel.{id} 广播） */
+export interface ChannelMessageView {
+  id: string
+  channelId: number
+  senderId: number
+  senderName: string
+  content: string
+  createdAt: string
+}
+
+/* ---------- 五子棋（GAME 事件 data，后端 wetalk-game） ---------- */
+
+export type GameAction =
+  | 'INVITE'
+  | 'START'
+  | 'REJECT'
+  | 'CANCEL'
+  | 'MOVE'
+  | 'GAME_OVER'
+
+export interface GameEventData {
+  action: GameAction
+  conversationId: string
+  gameId: string
+  /** INVITE */
+  from?: number
+  /** START */
+  blackId?: number
+  whiteId?: number
+  myColor?: 'BLACK' | 'WHITE'
+  /** MOVE */
+  idx?: number
+  color?: 'BLACK' | 'WHITE'
+  win?: boolean
+  nextId?: number
+  winnerId?: number | null
+  reason?: string
+}
+
+/* ---------- 开放平台 / 统计（Phase 7） ---------- */
+
+export interface ApiKeyView {
+  id: number
+  name: string
+  apiKey: string
+  revoked: boolean
+  createdAt: string | null
+}
+
+export interface WebhookView {
+  id: number
+  url: string
+  secret: string
+  active: boolean
+  createdAt: string | null
+}
+
+export interface StatsOverview {
+  users: number
+  groups: number
+  messages: number
+  todayMessages: number
+}
+
+export interface StatsTrendPoint {
+  day: string
+  count: number
 }

@@ -35,7 +35,10 @@ public class SecurityConfig {
             "/api/auth/refresh",
             "/actuator/**",
             "/ws/**",
-            "/error"
+            "/error",
+            // 开放平台：keys/webhooks 管理走 JWT（无 token 时 CurrentUser 抛 401 业务码），
+            // /api/open/me|messages 由控制器内 X-Api-Key 自行认证
+            "/api/open/**"
     };
 
     @Bean

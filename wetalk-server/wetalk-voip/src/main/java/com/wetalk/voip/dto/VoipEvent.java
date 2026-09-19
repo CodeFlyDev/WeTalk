@@ -27,6 +27,16 @@ public enum VoipEvent {
     MEET_JOIN,
     /** 会议：离开广播（groupId = 目标群） */
     MEET_LEAVE,
+    /** 语音房间：客户端加入（roomId = 房间，服务端回执 JOINED + 广播 PEER_JOINED） */
+    ROOM_JOIN,
+    /** 语音房间：客户端离开（服务端广播 PEER_LEFT） */
+    ROOM_LEAVE,
+    /** 服务端 → 本人：房间加入成功（payload = 当前在线成员 userId JSON 数组） */
+    ROOM_JOINED,
+    /** 服务端 → 房间其他成员：有新成员（fromUserId = 新人） */
+    ROOM_PEER_JOINED,
+    /** 服务端 → 房间其他成员：成员离开（fromUserId = 离开者） */
+    ROOM_PEER_LEFT,
     /** 服务端 → 客户端：信令被拒（payload = 原因），如非好友 */
     ERROR
 }
