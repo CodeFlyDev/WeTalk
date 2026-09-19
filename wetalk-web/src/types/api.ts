@@ -163,15 +163,20 @@ export type VoipEvent =
   | 'ICE'
   | 'END'
   | 'ERROR'
+  | 'MEET_JOIN'
+  | 'MEET_LEAVE'
 
 export type CallMedia = 'AUDIO' | 'VIDEO'
 
 /** /user/queue/voip 与 /app/voip.signal 载荷；fromUserId = 信令来源（服务端盖章） */
 export interface VoipSignal {
-  peerId: number
+  /** 点对点信令目标（群会议广播为空） */
+  peerId?: number | null
   callId: string
   event: VoipEvent
   media?: CallMedia | null
+  /** 会议广播目标群（仅 MEET_JOIN/MEET_LEAVE/OFFER/ANSWER/ICE 会议信令携带） */
+  groupId?: number | null
   /** SDP / ICE 候选 JSON / 文本原因 */
   payload?: string | null
   fromUserId?: number | null

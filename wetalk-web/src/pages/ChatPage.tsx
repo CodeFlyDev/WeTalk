@@ -20,6 +20,7 @@ export default function ChatPage() {
   const activeId = useChatStore((s) => s.activeId)
   const conversations = useChatStore((s) => s.conversations)
   const startCall = useCallStore((s) => s.startCall)
+  const startMeeting = useCallStore((s) => s.startMeeting)
   const [wsStatus, setWsStatus] = useState<WsStatus>(socket.status)
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -76,6 +77,16 @@ export default function ChatPage() {
                       <Video className="h-5 w-5" />
                     </Button>
                   </>
+                )}
+                {active.type === 'group' && active.groupId != null && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="群会议"
+                    onClick={() => void startMeeting(active.groupId!, active.name, 'VIDEO')}
+                  >
+                    <Video className="h-5 w-5" />
+                  </Button>
                 )}
               </div>
             </header>

@@ -3,18 +3,27 @@ import { Mic, MicOff, MonitorUp, Phone, PhoneOff, Video, VideoOff } from 'lucide
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { getLocalStream, getRemoteStream, useCallStore } from '@/webrtc/call'
+import {
+  getLocalStream,
+  getMeetingLocalStream,
+  getMeetingStream,
+  getRemoteStream,
+  useCallStore
+} from '@/webrtc/call'
+import { useAuthStore } from '@/store/auth'
 
-/** 通话浮层：来电弹窗 + 通话中悬浮面板（App 级挂载，任意页面可接听） */
+/** 通话浮层：来电弹窗 + 通话中悬浮面板 + 会议宫格（App 级挂载，任意页面可接听/加入） */
 export default function CallOverlay() {
   const active = useCallStore((s) => s.active)
   const incoming = useCallStore((s) => s.incoming)
-  if (!active && !incoming) return null
+  const meeting = useCallStore((s) => s.meeting)
+  if (!active && !incoming && !meeting) return null
 
   return (
     <>
       {incoming && <IncomingDialog />}
       {active && <ActivePanel />}
+      {meeting && <MeetingPanel />}
     </>
   )
 }
@@ -177,4 +186,90 @@ function DurationTicker() {
   const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
   const ss = String(seconds % 60).padStart(2, '0')
   return <span>{`${mm}:${ss}`}</span>
+}
+
+/* ---------- 群会议宫格 ---------- */
+
+/** 单个瓦片：视频流（无流/纯语音时头像占位）；muted 用于本地瓦片防回声 */
+function MeetingTile({ name, stream, muted, mirror }: { name: string; stream: MediaStream | null; muted?: boolean; mirror?: boolean }) {
+  const media = useCallStore((s) => s.meeting?.media)
+  const meetVersion = useCallStore((s) => s.meetVersion)
+  const mediaRef = useRef<HTMLVideoElement>(null)
+
+  // 绑定媒体流（ontrack 后 meetVersion 自增触发重绑）
+  useEffect(() => {
+    if (mediaRef.current) mediaRef.current.srcObject = stream
+  }, [stream, meetVersion])
+
+  return (
+    <div className="relative overflow-hidden rounded-lg bg-black">
+      <video
+        ref={mediaRef}
+        autoPlay
+        playsInline
+        muted={muted}
+        className={cn('h-full w-full', media === 'VIDEO' && stream && 'object-cover', mirror && 'scale-x-[-1]')}
+      />
+      {(!stream || media !== 'VIDEO') && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-primary/10 to-transparent">
+          <Avatar name={name} size={48} />
+        </div>
+      )}
+      <span className="absolute bottom-1 left-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">{name}</span>
+    </div>
+  )
+}
+
+function MeetingPanel() {
+  const meeting = useCallStore((s) => s.meeting)!
+  const meetMembers = useCallStore((s) => s.meetMembers)
+  const toggleMeetMute = useCallStore((s) => s.toggleMeetMute)
+  const toggleMeetCam = useCallStore((s) => s.toggleMeetCam)
+  const leaveMeeting = useCallStore((s) => s.leaveMeeting)
+  const selfName = useAuthStore((s) => s.user?.nickname || s.user?.username || '我')
+
+  return (
+    <div className="fixed bottom-4 right-4 z-40 w-[26rem] overflow-hidden rounded-2xl border bg-card shadow-xl">
+      <div className="flex items-center justify-between border-b px-3 py-2">
+        <p className="text-sm font-semibold">{meeting.groupName} · 会议</p>
+        <span className="text-xs text-muted-foreground">{meetMembers.length + 1} 人</span>
+      </div>
+      <div className="grid h-72 auto-rows-fr grid-cols-2 gap-1 bg-black p-1">
+        <MeetingTile name={selfName} stream={getMeetingLocalStream()} muted mirror />
+        {meetMembers.map((m) => (
+          <MeetingTile key={m.userId} name={m.name} stream={getMeetingStream(m.userId)} />
+        ))}
+      </div>
+      <div className="flex items-center justify-center gap-3 border-t py-3">
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn('h-10 w-10 rounded-full', meeting.muted && 'bg-red-500 text-white hover:bg-red-600')}
+          title={meeting.muted ? '取消静音' : '静音'}
+          onClick={toggleMeetMute}
+        >
+          {meeting.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+        </Button>
+        {meeting.media === 'VIDEO' && (
+          <Button
+            variant="outline"
+            size="icon"
+            className={cn('h-10 w-10 rounded-full', meeting.camOff && 'bg-red-500 text-white hover:bg-red-600')}
+            title={meeting.camOff ? '开启摄像头' : '关闭摄像头'}
+            onClick={toggleMeetCam}
+          >
+            {meeting.camOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+          </Button>
+        )}
+        <Button
+          size="icon"
+          className="h-10 w-10 rounded-full bg-red-500 text-white hover:bg-red-600"
+          title="离开会议"
+          onClick={leaveMeeting}
+        >
+          <PhoneOff className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
 }

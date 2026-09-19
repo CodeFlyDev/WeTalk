@@ -23,6 +23,10 @@ public enum VoipEvent {
     ICE,
     /** 任一方挂断 */
     END,
+    /** 会议：加入广播（groupId = 目标群，media = AUDIO/VIDEO），转发给群内其他在线成员 */
+    MEET_JOIN,
+    /** 会议：离开广播（groupId = 目标群） */
+    MEET_LEAVE,
     /** 服务端 → 客户端：信令被拒（payload = 原因），如非好友 */
     ERROR
 }
