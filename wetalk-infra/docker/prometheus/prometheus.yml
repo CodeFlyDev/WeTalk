@@ -1,0 +1,20 @@
+# =============================================================================
+# WeTalk Prometheus 抓取配置（Phase 8 可观测性）
+# 指标源：三业务服务 /actuator/prometheus（micrometer-registry-prometheus）
+# Grafana 建议导入面板：4701（Spring Boot 3.x）——JVM / HTTP / 连接池指标开箱即用
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: wetalk-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - wetalk-gateway:8080   # API 网关（WebFlux/SCG 指标）
+          - wetalk-core:8080      # IM 主链路 core 服务
+          - wetalk-ai:8080        # AI 域服务
+        labels:
+          project: wetalk

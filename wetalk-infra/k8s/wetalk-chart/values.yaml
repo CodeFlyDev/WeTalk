@@ -1,51 +1,103 @@
 # ============================================================
-# WeTalk 生产发布默认值
-# 用法参考 Task.md · 系统服务部署 · Step 4：
+# WeTalk 生产发布默认值（Phase 8 微服务形态：gateway / core / ai）
+# 用法参考 Task.md · 系统服务部署 · 多服务器部署 · Step 4：
 #   helm upgrade --install wetalk wetalk-infra/k8s/wetalk-chart \
 #     --namespace wetalk --create-namespace \
-#     -f values-prod.yaml --set image.tag=<git-sha>
+#     -f values-prod.yaml --set global.image.tag=<git-sha>
 # ============================================================
 
-image:
-  repository: wetalk-server
-  tag: latest
-  pullPolicy: IfNotPresent
-  # pullSecrets:
-  #   - harbor-secret
-
-replicaCount: 2
-
-service:
-  type: ClusterIP
-  port: 8080
+global:
+  image:
+    # 统一 tag（CI 推 ghcr.io/<owner>/wetalk-*:sha）；单服务覆盖见 services.<name>.image.tag
+    tag: latest
+  imagePullPolicy: IfNotPresent
+  # imagePullSecrets:
+  #   - regcred
+  # SkyWalking agent 已内置于业务镜像（Dockerfile.server 构建期打入），运行期环境变量开关：
+  # OAP 地址由 services.<name>.env 或 global.env 注入
+  env: {}
+    # SW_AGENT_COLLECTOR_BACKEND_SERVICES: skywalking-oap.observability:11800
 
 ingress:
   enabled: true
   className: nginx
   host: wetalk.example.com
   annotations:
-    # WebSocket 长连接超时
+    # WebSocket 长连接超时（流量统一进 gateway 服务）
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 
-resources:
-  requests:
-    cpu: 500m
-    memory: 1Gi
-  limits:
-    cpu: "2"
-    memory: 2Gi
+# ---------------- 三业务服务矩阵 ----------------
+services:
+  # API 网关（统一入口，Nacos lb:// 路由）
+  gateway:
+    image:
+      repository: ghcr.io/example/wetalk-gateway
+    replicaCount: 2
+    ports:
+      - { name: http, containerPort: 8080 }
+    service:
+      port: 8080
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: "1", memory: 1Gi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+    env: {}
 
-hpa:
-  enabled: false
-  minReplicas: 2
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 70
+  # IM 主链路 core（WS broker + 全业务域；多副本依赖 Nacos + sticky 会话）
+  core:
+    image:
+      repository: ghcr.io/example/wetalk-core
+    replicaCount: 2
+    ports:
+      - { name: http, containerPort: 8080 }
+      - { name: grpc, containerPort: 9090 }
+    service:
+      port: 8080
+      # WebSocket 会话亲和：跨副本 WS 必须粘住同一 Pod
+      sessionAffinity: ClientIP
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits: { cpu: "2", memory: 2Gi }
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+    env: {}
+      # SPRING_PROFILES_ACTIVE: k8s
+      # NACOS_ADDR: nacos.middleware:8848
+      # SENTINEL_DASHBOARD: sentinel.middleware:8858
 
-pdb:
-  enabled: true
-  minAvailable: 1
-
-# 业务环境变量透传（config 全量收敛到 Nacos 后精简）
-env: {}
-  # SPRING_PROFILES_ACTIVE: k8s
+  # AI 域（助手/摘要/转写/RAG；无状态，随时横向扩）
+  ai:
+    image:
+      repository: ghcr.io/example/wetalk-ai
+    replicaCount: 1
+    ports:
+      - { name: http, containerPort: 8080 }
+    service:
+      port: 8080
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: "2", memory: 2Gi }
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: false
+      minAvailable: 1
+    env: {}
+      # CORE_URL: http://wetalk-core:8080

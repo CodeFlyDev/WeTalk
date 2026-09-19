@@ -1,0 +1,19 @@
+# =============================================================================
+# WeTalk Istio 最小集（Phase 8，opt-in：先安装 istioctl + istioctl install --set profile=default）
+# 流量入口网关：替代/前置 Nginx Ingress，HTTP + WS 统一 80（TLS 在 Istio Gateway 或云 SLB 终结）
+# =============================================================================
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: wetalk-gateway
+  namespace: wetalk
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - wetalk.example.com

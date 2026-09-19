@@ -1,0 +1,43 @@
+# 服务 CD：helm upgrade 部署三业务服务到目标 K8s 集群（手动触发骨架）
+# 前置配置（接生产集群时补齐）：
+#   1. Repo Secrets 添加 KUBE_CONFIG：目标集群 kubeconfig（内容 base64 由 Secret 承载）
+#   2. 集群内已就绪：Nacos / Sentinel / MySQL / Mongo / Redis / ES / Kafka / MinIO / SkyWalking OAP
+#   3. values-prod.yaml：改 services.<name>.image.repository 为实际仓库并配 imagePullSecrets
+name: Server CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 镜像 tag（CI 产出的 git sha 或 latest）
+        required: true
+        default: latest
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Helm upgrade --install
+        run: |
+          helm upgrade --install wetalk wetalk-infra/k8s/wetalk-chart \
+            --namespace wetalk --create-namespace \
+            -f wetalk-infra/k8s/wetalk-chart/values-prod.yaml \
+            --set global.image.tag=${{ github.event.inputs.tag }}
+
+      - name: Rollout status
+        run: |
+          kubectl -n wetalk rollout status deployment/wetalk-gateway --timeout=180s
+          kubectl -n wetalk rollout status deployment/wetalk-core --timeout=300s
+          kubectl -n wetalk rollout status deployment/wetalk-ai --timeout=300s

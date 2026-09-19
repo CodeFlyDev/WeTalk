@@ -1,0 +1,7 @@
+# 复制为 terraform.tfvars 并按实际填写
+region          = "cn-hangzhou"
+name            = "wetalk"
+instance_type   = "ecs.c7.xlarge"
+node_count      = 3
+key_name        = "your-ssh-key-pair-name"
+allow_ssh_cidr  = "1.2.3.4/32"   # 改为你的出口 IP

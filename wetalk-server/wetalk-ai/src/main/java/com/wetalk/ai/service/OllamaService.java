@@ -1,13 +1,9 @@
 package com.wetalk.ai.service;
 
+import com.wetalk.ai.client.CoreClient;
 import com.wetalk.ai.config.AiProperties;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
-import com.wetalk.common.MessageType;
-import com.wetalk.message.dto.MessageView;
-import com.wetalk.message.service.MessageService;
-import com.wetalk.user.entity.UserAccount;
-import com.wetalk.user.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,11 +11,12 @@ import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 本地 LLM（Ollama /api/chat，非流式起步）：
  * - AI 助手对话：客户端携带历史，服务端裁剪后转发
- * - 聊天摘要：校验参与者 → 取最近消息拼 prompt → 生成要点
+ * - 聊天摘要：参与者校验与最近消息经 CoreClient（core 侧闭环），拼 prompt 生成要点
  */
 @Service
 public class OllamaService {
@@ -34,16 +31,16 @@ public class OllamaService {
     private static final int SUMMARY_MESSAGE_LIMIT = 50;
     private static final int SUMMARY_SNIPPET_LENGTH = 200;
 
-    private final MessageService messageService;
-    private final UserService userService;
+    private final CoreClient coreClient;
     private final AiProperties aiProperties;
     private final RestClient restClient;
 
-    public OllamaService(MessageService messageService,
-                         UserService userService,
+    /** 发送者昵称缓存（摘要拼接高频读；超限整体清空防膨胀） */
+    private final ConcurrentHashMap<Long, String> senderNameCache = new ConcurrentHashMap<>();
+
+    public OllamaService(CoreClient coreClient,
                          AiProperties aiProperties) {
-        this.messageService = messageService;
-        this.userService = userService;
+        this.coreClient = coreClient;
         this.aiProperties = aiProperties;
         // 本地 LLM 生成较慢：连接 5s / 读取 120s（前端 axios 同步 120s）
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
@@ -90,16 +87,17 @@ public class OllamaService {
     }
 
     /**
-     * 聊天摘要：仅会话参与者可调用，取最近 50 条有效消息拼接后生成要点。
+     * 聊天摘要：仅会话参与者可调用（core 侧校验），取最近 50 条有效消息拼接后生成要点。
      */
     public String summarize(Long userId, String conversationId) {
-        List<MessageView> recent = messageService.recent(userId, conversationId, SUMMARY_MESSAGE_LIMIT);
+        List<CoreClient.CoreMessage> recent = coreClient.recent(conversationId, SUMMARY_MESSAGE_LIMIT);
         if (recent.isEmpty()) {
             throw new BizException(ErrorCode.BIZ_ERROR, "该会话暂无可摘要的消息");
         }
         StringBuilder sb = new StringBuilder("请用中文总结以下即时通讯对话的要点（关键结论、待办事项），150 字以内：\n\n");
-        for (MessageView m : recent) {
-            if (m.recalled() || m.type() != MessageType.TEXT || m.content() == null || m.content().isBlank()) {
+        for (CoreClient.CoreMessage m : recent) {
+            if (Boolean.TRUE.equals(m.recalled()) || !"TEXT".equals(m.type())
+                    || m.content() == null || m.content().isBlank()) {
                 continue;
             }
             sb.append(senderName(m.senderId())).append("：")
@@ -139,10 +137,23 @@ public class OllamaService {
     }
 
     private String senderName(Long senderId) {
+        if (senderId == null) {
+            return "未知用户";
+        }
+        String cached = senderNameCache.get(senderId);
+        if (cached != null) {
+            return cached;
+        }
         try {
-            UserAccount user = userService.requireById(senderId);
-            return user.getNickname() == null || user.getNickname().isBlank()
-                    ? user.getUsername() : user.getNickname();
+            CoreClient.CoreUser user = coreClient.user(senderId);
+            String name = user == null ? null
+                    : (user.nickname() == null || user.nickname().isBlank() ? user.username() : user.nickname());
+            String resolved = name == null || name.isBlank() ? "用户" + senderId : name;
+            if (senderNameCache.size() > 5000) {
+                senderNameCache.clear();
+            }
+            senderNameCache.put(senderId, resolved);
+            return resolved;
         } catch (Exception e) {
             return "用户" + senderId;
         }

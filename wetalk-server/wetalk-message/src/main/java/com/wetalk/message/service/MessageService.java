@@ -286,7 +286,8 @@ public class MessageService {
     }
 
     /** 离线补拉：按会话向前翻页（返回升序） */
-    public List<MessageView> history(String conversationId, LocalDateTime before, int limit) {
+    public List<MessageView> history(Long userId, String conversationId, LocalDateTime before, int limit) {
+        assertParticipant(userId, conversationId);
         int size = limit <= 0 ? 20 : Math.min(limit, 50);
         List<MessageDoc> docs = before == null
                 ? messageRepository.findTop50ByConversationIdOrderByCreatedAtDesc(conversationId)

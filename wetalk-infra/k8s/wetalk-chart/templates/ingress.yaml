@@ -15,7 +15,8 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "wetalk.fullname" . }}
+                # 统一入口：Ingress → gateway 服务 → Nacos lb:// 路由 core/ai
+                name: {{ include "wetalk.svcname" (list . "gateway") }}
                 port:
-                  number: {{ .Values.service.port }}
+                  number: {{ .Values.services.gateway.service.port }}
 {{- end }}

@@ -1,5 +1,6 @@
-# 后端 CI：构建测试 + 镜像发布（Task.md · 系统服务部署 · Step 6）
-# 镜像默认推送 GHCR；如需 Harbor，改 REGISTRY/IMAGE_NAME 并配置对应 Secrets
+# 后端 CI：构建测试 + 三服务镜像发布（Task.md · 系统服务部署 · Step 6）
+# Phase 8 微服务化：按 MODULE 矩阵构建 core / ai / gateway 三镜像，推送 GHCR，tag = git sha
+# 如需 Harbor，改 REGISTRY/IMAGE_PREFIX 并配置对应 Secrets
 name: Backend CI
 
 on:
@@ -11,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/wetalk-server
+  IMAGE_PREFIX: ${{ github.repository_owner }}/wetalk
 
 jobs:
   build-test:
@@ -37,6 +38,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - module: wetalk-app      # IM 主链路 core 服务
+            image: wetalk-core
+          - module: wetalk-ai-app   # AI 域独立服务
+            image: wetalk-ai
+          - module: wetalk-gateway  # API 网关
+            image: wetalk-gateway
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +61,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}
           tags: |
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
@@ -61,6 +71,8 @@ jobs:
           context: .
           file: wetalk-infra/docker/Dockerfile.server
           push: true
+          build-args: |
+            MODULE=${{ matrix.module }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

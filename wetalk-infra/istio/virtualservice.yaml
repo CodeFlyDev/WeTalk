@@ -1,0 +1,20 @@
+# =============================================================================
+# WeTalk Istio VirtualService：域名流量 → chart 的 gateway 服务
+# （/api /ws 由 wetalk-gateway 经 Nacos lb:// 二次路由到 core/ai，WS upgrade 透传）
+# =============================================================================
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: wetalk
+  namespace: wetalk
+spec:
+  hosts:
+    - wetalk.example.com
+  gateways:
+    - wetalk-gateway
+  http:
+    - route:
+        - destination:
+            host: wetalk-gateway.wetalk.svc.cluster.local
+            port:
+              number: 8080

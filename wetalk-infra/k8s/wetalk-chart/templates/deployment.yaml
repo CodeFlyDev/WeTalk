@@ -1,16 +1,20 @@
+{{- range $name, $svc := .Values.services }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "wetalk.fullname" . }}
+  name: {{ include "wetalk.svcname" (list $ $name) }}
   labels:
-    app: {{ include "wetalk.fullname" . }}
+    app: {{ include "wetalk.fullname" $ }}
+    service: {{ $name }}
 spec:
-  {{- if not .Values.hpa.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  {{- if not $svc.hpa.enabled }}
+  replicas: {{ $svc.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      app: {{ include "wetalk.fullname" . }}
+      app: {{ include "wetalk.fullname" $ }}
+      service: {{ $name }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,28 +23,34 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ include "wetalk.fullname" . }}
+        app: {{ include "wetalk.fullname" $ }}
+        service: {{ $name }}
     spec:
-      {{- with .Values.image.pullSecrets }}
+      {{- with $.Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: wetalk-server
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: wetalk-{{ $name }}
+          image: "{{ $svc.image.repository }}:{{ $svc.image.tag | default $.Values.global.image.tag }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
           ports:
-            - name: http
-              containerPort: 8080
-            - name: grpc
-              containerPort: 9090
+            {{- range $port := $svc.ports }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.containerPort }}
+            {{- end }}
           env:
-            {{- range $k, $v := .Values.env }}
+            {{- /* 服务级 env 优先，global.env 兜底（SW_AGENT_COLLECTOR_BACKEND_SERVICES 等） */}}
+            {{- range $k, $v := $.Values.global.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := $svc.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml $svc.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -53,3 +63,4 @@ spec:
               port: http
             initialDelaySeconds: 60
             periodSeconds: 15
+{{- end }}

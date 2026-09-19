@@ -3,7 +3,18 @@ server:
 
 spring:
   application:
-    name: wetalk-app
+    name: wetalk-core
+
+  # ---- Nacos 注册发现 + Sentinel 流控（Phase 8；本机裸跑可 NACOS_ENABLED=false）----
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_ADDR:localhost:8848}
+    sentinel:
+      enabled: ${SENTINEL_ENABLED:true}
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8858}
 
   # ---- MySQL（结构化数据：用户/关系/群组/钱包）----
   datasource:
@@ -56,19 +67,16 @@ wetalk:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
     bucket: wetalk
-  ai:
-    whisper-url: ${WHISPER_URL:http://localhost:8001}
-    whisper-model: ${WHISPER_MODEL:Systran/faster-whisper-small}
-    ollama-url: ${OLLAMA_URL:http://localhost:11434}
-    ollama-model: ${OLLAMA_MODEL:qwen2.5:1.5b}
-    # RAG 向量模型（需 docker compose exec ollama ollama pull nomic-embed-text）
-    ollama-embed-model: ${OLLAMA_EMBED_MODEL:nomic-embed-text}
+  # AI 域配置（whisper/ollama）随 wetalk-ai 拆分迁移至 wetalk-ai-app
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}

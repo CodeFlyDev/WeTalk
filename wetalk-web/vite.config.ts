@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 开发环境反代到本地后端（docker compose 已拉起 wetalk-server 时生效）
+      // 开发环境反代到本地网关（docker compose 已拉起 wetalk-gateway 时生效；网关再按域路由到 core/ai）
       '/api': { target: 'http://localhost:8080', changeOrigin: true },
       '/ws': { target: 'http://localhost:8080', ws: true }
     }

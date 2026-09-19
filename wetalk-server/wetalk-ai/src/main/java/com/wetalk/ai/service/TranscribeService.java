@@ -1,12 +1,10 @@
 package com.wetalk.ai.service;
 
+import com.wetalk.ai.client.CoreClient;
+import com.wetalk.ai.config.AiMinioProperties;
 import com.wetalk.ai.config.AiProperties;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
-import com.wetalk.common.MessageType;
-import com.wetalk.file.config.MinioProperties;
-import com.wetalk.message.dto.MessageView;
-import com.wetalk.message.service.MessageService;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import org.slf4j.Logger;
@@ -21,7 +19,8 @@ import org.springframework.web.client.RestClient;
 import java.io.InputStream;
 
 /**
- * 语音转写：按消息 ID 校验会话参与者 → 从 MinIO 取音频 → 调用 faster-whisper（OpenAI 兼容 /v1/audio/transcriptions）。
+ * 语音转写：消息参与者校验与语音归属经 CoreClient 在 core 侧闭环 → 从 MinIO 取音频 →
+ * 调用 faster-whisper（OpenAI 兼容 /v1/audio/transcriptions）。
  * 转写结果不落库（按需实时转），失败降级为业务异常提示。
  */
 @Service
@@ -32,19 +31,19 @@ public class TranscribeService {
     /** 单次转写音频上限 10MB（60s webm/opus 远小于此） */
     private static final int MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
-    private final MessageService messageService;
+    private final CoreClient coreClient;
     private final MinioClient minioClient;
-    private final MinioProperties minioProperties;
+    private final AiMinioProperties minioProperties;
     private final AiProperties aiProperties;
     private final RestClient restClient;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    public TranscribeService(MessageService messageService,
+    public TranscribeService(CoreClient coreClient,
                              MinioClient minioClient,
-                             MinioProperties minioProperties,
+                             AiMinioProperties minioProperties,
                              AiProperties aiProperties) {
-        this.messageService = messageService;
+        this.coreClient = coreClient;
         this.minioClient = minioClient;
         this.minioProperties = minioProperties;
         this.aiProperties = aiProperties;
@@ -54,9 +53,9 @@ public class TranscribeService {
     }
 
     public String transcribe(Long userId, String messageId) {
-        // 消息级校验：仅会话参与者可转写
-        MessageView view = messageService.get(userId, messageId);
-        if (view.type() != MessageType.VOICE || view.refObjectKey() == null) {
+        // 消息级校验（参与者/存在性）在 core 侧完成，这里只认语音类型
+        CoreClient.CoreMessage view = coreClient.getMessage(messageId);
+        if (view == null || !"VOICE".equals(view.type()) || view.refObjectKey() == null) {
             throw new BizException(ErrorCode.BAD_REQUEST, "仅语音消息支持转写");
         }
 

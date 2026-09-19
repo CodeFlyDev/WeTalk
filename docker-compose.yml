@@ -4,15 +4,17 @@
 # 用法：
 #   cp .env.example .env                  # 必须先配置密码与密钥
 #   docker compose up -d                  # 拉起全部基础设施
-#                                         # (MySQL/MongoDB/Redis/ES/MinIO/Kafka/Keycloak/coturn)
-#   docker compose build wetalk-server    # 构建后端镜像（需 wetalk-server 源码，Phase 1 骨架落地后可用）
-#   docker compose up -d wetalk-server    # 启动业务服务（profile: app）
+#                                         # (MySQL/MongoDB/Redis/ES/MinIO/Kafka/Nacos/Sentinel/coturn
+#                                         #  + SkyWalking/Prometheus/Grafana/Loki 可观测性栈)
+#   docker compose build wetalk-core wetalk-ai wetalk-gateway   # 构建业务服务镜像（profile: app）
+#   docker compose --profile app up -d    # 启动业务服务（gateway:8080 → core:8082 / ai:8083，已挂 SkyWalking agent）
 #
 # 注意：
 #   1. Elasticsearch 要求宿主机 vm.max_map_count >= 262144
 #      Linux: sudo sysctl -w vm.max_map_count=262144（写入 /etc/sysctl.conf 持久化）
 #      Docker Desktop (WSL2) 通常已满足
 #   2. ES / Keycloak 此处为开发模式（未开 TLS），生产集群形态参考 Task.md · 多服务器部署
+#   3. Phase 8 起 8080 为网关统一入口；core/ai 宿主机映射 8082/8083 仅便于直调调试（8081 已被 keycloak 占用）
 # =============================================================================
 
 name: wetalk
@@ -32,6 +34,8 @@ volumes:
   rocketmq-broker-data:
   rocketmq-broker-logs:
   ollama-data:
+  grafana-data:
+  loki-data:
 
 services:
   mysql:
@@ -262,6 +266,118 @@ services:
       start_period: 60s
     networks: [wetalk-net]
 
+  # 服务注册发现（Phase 8 微服务化；standalone + 内嵌 derby 开发模式）
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: wetalk-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      TZ: Asia/Shanghai
+    ports:
+      - "8848:8848"   # 控制台 + OpenAPI
+      - "9848:9848"   # gRPC 客户端通道（2.x 必需）
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [wetalk-net]
+
+  # Sentinel 流控可视化控制台（规则内存态，生产持久化留 K8s 轮）
+  sentinel-dashboard:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: wetalk-sentinel
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8858:8858"   # 控制台（默认账号 sentinel/sentinel）
+    networks: [wetalk-net]
+
+  # ---------------- Phase 8 可观测性（指标 + 链路 + 日志）----------------
+  # SkyWalking OAP（链路追踪后端；开发模式 H2 内存存储，重启即清，生产换 ES/BanyanDB）
+  skywalking-oap:
+    image: apache/skywalking-oap-server:10.1.0
+    container_name: wetalk-skywalking-oap
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xms512m -Xmx1g"   # 开发机内存友好，生产按需调整
+      SW_STORAGE: h2
+    ports:
+      - "11800:11800"   # gRPC 收数通道（Java agent 上报）
+      - "12800:12800"   # REST/GraphQL 查询 API（UI 消费）
+    networks: [wetalk-net]
+
+  skywalking-ui:
+    image: apache/skywalking-ui:10.1.0
+    container_name: wetalk-skywalking-ui
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SW_OAP_ADDRESS: http://skywalking-oap:12800
+    ports:
+      - "8090:8080"     # 拓扑 / 链路 / 慢接口追踪控制台
+    depends_on: [skywalking-oap]
+    networks: [wetalk-net]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: wetalk-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./wetalk-infra/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9091:9090"     # 宿主 9091（9090 已被 core 的 gRPC 映射占用）
+    networks: [wetalk-net]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: wetalk-grafana
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      GF_SECURITY_ADMIN_USER: admin        # 生产必须经 .env 覆盖
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./wetalk-infra/docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"     # 指标/日志面板（数据源已自动装配 Prometheus + Loki）
+    depends_on: [prometheus, loki]
+    networks: [wetalk-net]
+
+  # 日志聚合（Loki 默认配置开箱即用，3.x 单二进制；开发模式无鉴权）
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: wetalk-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks: [wetalk-net]
+
+  # 日志采集代理：docker_sd 发现 compose 容器 stdout/stderr → 推送 Loki
+  promtail:
+    image: grafana/promtail:3.1.0
+    container_name: wetalk-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./wetalk-infra/docker/promtail/promtail.yml:/etc/promtail/config.yml:ro
+    depends_on: [loki]
+    networks: [wetalk-net]
+
   # WebRTC TURN 中继 —— 云服务器部署必须先在 .env 填写 TURN_PUBLIC_IP / TURN_SECRET
   coturn:
     image: coturn/coturn:latest
@@ -286,13 +402,15 @@ services:
       - "49160-49200:49160-49200/udp"
     networks: [wetalk-net]
 
-  # 业务服务（profile: app）—— 需先有 wetalk-server 源码再构建镜像
-  wetalk-server:
+  # 业务服务（profile: app）—— Phase 8 微服务化：gateway(8080) 统一入口 → core(8082) + ai(8083)
+  wetalk-core:
     build:
       context: .
       dockerfile: wetalk-infra/docker/Dockerfile.server
-    image: wetalk-server:1.0.0
-    container_name: wetalk-server
+      args:
+        MODULE: wetalk-app
+    image: wetalk-core:1.0.0
+    container_name: wetalk-core
     profiles: ["app"]
     restart: unless-stopped
     environment:
@@ -311,15 +429,18 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       KEYCLOAK_ISSUER: "http://keycloak:8080/realms/wetalk"
-      WHISPER_URL: "http://whisper:8000"
-      OLLAMA_URL: "http://ollama:11434"
-      OLLAMA_MODEL: ${OLLAMA_MODEL:qwen2.5:1.5b}
-      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:nomic-embed-text}
+      NACOS_ADDR: "nacos:8848"
+      SENTINEL_DASHBOARD: "sentinel-dashboard:8858"
+      SW_AGENT_ENABLED: "true"
+      SW_AGENT_NAME: "wetalk-core"
+      SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
     ports:
-      - "8080:8080"                     # HTTP / WebSocket
+      - "8082:8080"                     # HTTP / WebSocket（宿主机直调用；外部统一走 gateway:8080）
       - "9090:9090"                     # gRPC（服务间）
       - "40000-40100:40000-40100/udp"   # Mediasoup SFU 媒体端口
     depends_on:
+      nacos:
+        condition: service_healthy
       mysql:
         condition: service_healthy
       mongo:
@@ -336,4 +457,76 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+    networks: [wetalk-net]
+
+  # AI 域独立服务（助手/摘要/转写/RAG）：经 CORE_URL 调 core 做参与者校验，直读 MinIO/ES/Ollama/Whisper
+  wetalk-ai:
+    build:
+      context: .
+      dockerfile: wetalk-infra/docker/Dockerfile.server
+      args:
+        MODULE: wetalk-ai-app
+    image: wetalk-ai:1.0.0
+    container_name: wetalk-ai
+    profiles: ["app"]
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: "docker"
+      CORE_URL: "http://wetalk-core:8080"
+      JWT_SECRET: ${JWT_SECRET}
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      ES_URIS: "http://elasticsearch:9200"
+      WHISPER_URL: "http://whisper:8000"
+      OLLAMA_URL: "http://ollama:11434"
+      OLLAMA_MODEL: ${OLLAMA_MODEL:qwen2.5:1.5b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:nomic-embed-text}
+      NACOS_ADDR: "nacos:8848"
+      SENTINEL_DASHBOARD: "sentinel-dashboard:8858"
+      SW_AGENT_ENABLED: "true"
+      SW_AGENT_NAME: "wetalk-ai"
+      SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
+    ports:
+      - "8083:8080"                     # 宿主机直调用；外部统一走 gateway:8080
+    depends_on:
+      nacos:
+        condition: service_healthy
+      wetalk-core:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [wetalk-net]
+
+  # API 网关（统一入口：/api/ai/** → wetalk-ai，/api/** 与 /ws/** → wetalk-core）
+  wetalk-gateway:
+    build:
+      context: .
+      dockerfile: wetalk-infra/docker/Dockerfile.server
+      args:
+        MODULE: wetalk-gateway
+    image: wetalk-gateway:1.0.0
+    container_name: wetalk-gateway
+    profiles: ["app"]
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: "docker"
+      NACOS_ADDR: "nacos:8848"
+      SENTINEL_DASHBOARD: "sentinel-dashboard:8858"
+      SW_AGENT_ENABLED: "true"
+      SW_AGENT_NAME: "wetalk-gateway"
+      SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
+    ports:
+      - "8080:8080"                     # 前端统一入口（HTTP + WebSocket）
+    depends_on:
+      nacos:
+        condition: service_healthy
+      wetalk-core:
+        condition: service_started
+      wetalk-ai:
+        condition: service_started
     networks: [wetalk-net]

@@ -35,6 +35,7 @@
         <module>wetalk-stat</module>
         <module>wetalk-wallet</module>
         <module>wetalk-ai</module>
+        <module>wetalk-ai-app</module>
         <module>wetalk-gateway</module>
         <module>wetalk-app</module>
     </modules>
@@ -46,10 +47,30 @@
         <jjwt.version>0.12.6</jjwt.version>
         <minio.version>8.5.12</minio.version>
         <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
+        <!-- Spring Cloud（Gateway，与 Boot 3.4 官方配对）+ Spring Cloud Alibaba（Nacos/Sentinel） -->
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2023.0.3.3</spring-cloud-alibaba.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud BOM（在前：spring-cloud-commons 等对齐 2024.0.0） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba BOM（Nacos 注册发现 + Sentinel 流控） -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- 内部模块统一版本管理 -->
             <dependency>
                 <groupId>com.wetalk</groupId>

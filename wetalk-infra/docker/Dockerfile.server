@@ -1,24 +1,35 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
-# WeTalk 后端多阶段构建（wetalk-server Maven 骨架落地后即可用）
-# 构建：docker build -t wetalk-server:1.0.0 -f wetalk-infra/docker/Dockerfile.server .
+# WeTalk 后端多阶段构建（按模块构建不同服务镜像，Phase 8 微服务化）
+#   core 服务：    docker build --build-arg MODULE=wetalk-app    -t wetalk-core:1.0.0   -f wetalk-infra/docker/Dockerfile.server .
+#   AI 服务：      docker build --build-arg MODULE=wetalk-ai-app -t wetalk-ai:1.0.0     -f wetalk-infra/docker/Dockerfile.server .
+#   网关：         docker build --build-arg MODULE=wetalk-gateway -t wetalk-gateway:1.0.0 -f wetalk-infra/docker/Dockerfile.server .
 # =============================================================================
 
 # ---------- 构建阶段 ----------
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY wetalk-server/ .
+ARG MODULE=wetalk-app
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -q -pl wetalk-app -am package -DskipTests
+    mvn -q -pl ${MODULE} -am package -DskipTests
+
+# SkyWalking Java agent（构建期下载一次，随镜像分发；运行期 SW_AGENT_ENABLED=true 才挂载）
+ARG SW_AGENT_VERSION=10.1.0
+RUN curl -fL "https://archive.apache.org/dist/skywalking/java-agent/${SW_AGENT_VERSION}/apache-skywalking-java-agent-${SW_AGENT_VERSION}.tgz" \
+    | tar -xz -C /
 
 # ---------- 运行阶段 ----------
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /build/wetalk-app/target/*.jar app.jar
+ARG MODULE=wetalk-app
+COPY --from=build /build/${MODULE}/target/*.jar app.jar
+COPY --from=build /skywalking-agent /skywalking-agent
 RUN useradd -r -u 10001 wetalk && chown wetalk: app.jar
 USER wetalk
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseZGC"
 EXPOSE 8080 9090
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# SW_AGENT_ENABLED 未设置时不挂 agent（零开销）；挂了 agent 而 OAP 不可达时仅打连接日志，不阻断启动
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS ${SW_AGENT_ENABLED:+-javaagent:/skywalking-agent/skywalking-agent.jar} -jar app.jar"]

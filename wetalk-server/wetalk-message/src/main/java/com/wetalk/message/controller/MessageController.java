@@ -123,7 +123,14 @@ public class MessageController {
             @RequestParam(required = false) String before,
             @RequestParam(defaultValue = "20") int limit) {
         LocalDateTime beforeTime = before == null || before.isBlank() ? null : LocalDateTime.parse(before, ISO);
-        return ApiResult.ok(messageService.history(conversationId, beforeTime, limit));
+        return ApiResult.ok(messageService.history(CurrentUser.id(), conversationId, beforeTime, limit));
+    }
+
+    /** 会话最近 N 条（参与者校验；AI 摘要等跨服务消费，与进程内 recent() 同语义） */
+    @GetMapping("/recent")
+    public ApiResult<List<MessageView>> recent(@RequestParam String conversationId,
+                                               @RequestParam(defaultValue = "20") int limit) {
+        return ApiResult.ok(messageService.recent(CurrentUser.id(), conversationId, limit));
     }
 
     @GetMapping("/unread")

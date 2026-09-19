@@ -11,12 +11,44 @@
 
     <artifactId>wetalk-gateway</artifactId>
     <name>wetalk-gateway</name>
-    <description>API 网关（Phase 3+ 拆分时启用）</description>
+    <description>API 网关（Spring Cloud Gateway：统一入口 / 按域路由 / WS 转发，Phase 8 启用）</description>
 
     <dependencies>
+        <!-- Spring Cloud Gateway（WebFlux 响应式，勿与 spring-boot-starter-web 同进程） -->
         <dependency>
-            <groupId>com.wetalk</groupId>
-            <artifactId>wetalk-common</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Nacos 注册发现（lb:// 路由依赖） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <!-- Sentinel 网关流控（dashboard 可视化 + 规则推送） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-spring-cloud-gateway-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- Prometheus 指标暴露（/actuator/prometheus，Phase 8 可观测性） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
     </dependencies>
 </project>
