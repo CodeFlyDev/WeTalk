@@ -1,6 +1,6 @@
 package com.wetalk.friend.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.friend.dto.FriendApplyRequest;
 import com.wetalk.friend.dto.FriendRequestView;

@@ -1,7 +1,7 @@
 package com.wetalk.ai.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;

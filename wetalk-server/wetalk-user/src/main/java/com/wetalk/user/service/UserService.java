@@ -2,6 +2,7 @@ package com.wetalk.user.service;
 
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
+import com.wetalk.common.port.UserPort;
 import com.wetalk.user.dto.UserView;
 import com.wetalk.user.entity.UserAccount;
 import com.wetalk.user.repository.UserAccountRepository;
@@ -14,7 +15,7 @@ import java.util.List;
  * 用户领域服务 —— 供 auth / friend / group 等模块调用（模块化单体：本地方法调用）
  */
 @Service
-public class UserService {
+public class UserService implements UserPort {
 
     private final UserAccountRepository repository;
 
@@ -59,6 +60,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public boolean existsById(Long id) {
         return repository.existsById(id);
     }

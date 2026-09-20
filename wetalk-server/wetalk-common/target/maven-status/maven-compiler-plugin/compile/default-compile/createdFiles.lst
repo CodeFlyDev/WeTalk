@@ -1,0 +1,12 @@
+com\wetalk\common\port\PresencePort.class
+com\wetalk\common\AchieveEvent.class
+com\wetalk\common\BizException.class
+com\wetalk\common\port\UserPort.class
+com\wetalk\common\security\LoginUser.class
+com\wetalk\common\WebhookEvent.class
+com\wetalk\common\config\CorsProperties.class
+com\wetalk\common\MessageType.class
+com\wetalk\common\ApiResult.class
+com\wetalk\common\config\CorsConfig.class
+com\wetalk\common\ErrorCode.class
+com\wetalk\common\security\CurrentUser.class

@@ -1,6 +1,6 @@
 package com.wetalk.open.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.message.dto.MessageView;
 import com.wetalk.message.dto.SendMessageRequest;

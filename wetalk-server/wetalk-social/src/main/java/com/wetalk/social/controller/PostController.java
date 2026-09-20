@@ -1,6 +1,6 @@
 package com.wetalk.social.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.social.dto.PostView;
 import com.wetalk.social.service.PostService;

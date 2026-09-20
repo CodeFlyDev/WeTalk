@@ -1,0 +1,9 @@
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\controller\PostController.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\dto\PostView.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\entity\Post.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\entity\PostComment.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\entity\PostLike.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\repository\PostCommentRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\repository\PostLikeRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\repository\PostRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\java\com\wetalk\social\service\PostService.java

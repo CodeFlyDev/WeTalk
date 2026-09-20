@@ -15,6 +15,7 @@ import com.wetalk.wallet.dto.RedPacketView;
 import com.wetalk.wallet.entity.RedPacket;
 import com.wetalk.wallet.entity.RedPacketItem;
 import com.wetalk.wallet.entity.RedPacketTxLog;
+import com.wetalk.wallet.entity.WalletAccount;
 import com.wetalk.wallet.entity.WalletTransaction;
 import com.wetalk.wallet.repository.RedPacketItemRepository;
 import com.wetalk.wallet.repository.RedPacketRepository;

@@ -1,0 +1,8 @@
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\controller\VoiceRoomController.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\dto\VoipEvent.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\dto\VoipSignal.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\entity\VoiceRoom.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\repository\VoiceRoomRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\service\VoiceRoomService.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\service\VoipSignalingService.java
+E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\java\com\wetalk\voip\ws\VoipSignalingController.java

@@ -127,9 +127,9 @@ public class KnowledgeService {
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(q -> q.scriptScore(ss -> ss
                             .query(inner -> inner.term(t -> t.field("userId").value(userId)))
-                            .script(s -> s.inline(i -> i
+                            .script(s -> s
                                     .source("cosineSimilarity(params.qv, 'vector') + 1.0")
-                                    .params(Map.of("qv", JsonData.of(qv)))))))
+                                    .params(Map.of("qv", JsonData.of(qv))))))
                     .withMaxResults(Math.max(1, topK))
                     .build();
             SearchHits<KnowledgeChunkDoc> hits = operations.search(nativeQuery, KnowledgeChunkDoc.class);

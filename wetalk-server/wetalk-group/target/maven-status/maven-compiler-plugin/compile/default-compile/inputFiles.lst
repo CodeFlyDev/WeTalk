@@ -1,0 +1,9 @@
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\controller\GroupController.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\dto\AnnouncementRequest.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\dto\CreateGroupRequest.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\dto\GroupView.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\entity\Group.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\entity\GroupMember.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\repository\GroupMemberRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\repository\GroupRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\java\com\wetalk\group\service\GroupService.java

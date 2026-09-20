@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 /** 红包子份：发放时预拆分；receiverId 为 null 表示未领取。唯一约束防同一人重复领取 */
 @Entity
 @Table(name = "t_red_packet_item",
-        uniqueConstraints = @UniqueConstraint(columnList = "redPacketId, receiverId"),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"redPacketId", "receiverId"}),
         indexes = {@Index(columnList = "redPacketId"), @Index(columnList = "receiverId")})
 public class RedPacketItem {
 

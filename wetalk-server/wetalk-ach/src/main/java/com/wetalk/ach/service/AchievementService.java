@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wetalk.ach.Achievement;
 import com.wetalk.ach.entity.UserAchievement;
 import com.wetalk.ach.repository.UserAchievementRepository;
-import com.wetalk.message.presence.PresenceService;
+import com.wetalk.common.port.PresencePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -37,18 +37,18 @@ public class AchievementService {
     private final StringRedisTemplate redis;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
-    private final PresenceService presenceService;
+    private final PresencePort presencePort;
 
     public AchievementService(UserAchievementRepository repository,
                               StringRedisTemplate redis,
                               SimpMessagingTemplate messagingTemplate,
                               ObjectMapper objectMapper,
-                              PresenceService presenceService) {
+                              PresencePort presencePort) {
         this.repository = repository;
         this.redis = redis;
         this.messagingTemplate = messagingTemplate;
         this.objectMapper = objectMapper;
-        this.presenceService = presenceService;
+        this.presencePort = presencePort;
     }
 
     /** 解锁成就（幂等，可任意次触发）：首次落库 + 在线推送 */
@@ -139,7 +139,7 @@ public class AchievementService {
     }
 
     private boolean isOnline(Long userId) {
-        return presenceService.isOnline(userId);
+        return presencePort.isOnline(userId);
     }
 
     private UserAchievement achievementOf(Long userId, String code) {

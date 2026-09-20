@@ -36,11 +36,15 @@ class SocketManager {
     this.disconnect()
     this.accessToken = accessToken
 
-    const wsUrl = `${location.origin}/ws?token=${encodeURIComponent(accessToken)}`
+    const wsUrl = `${location.origin}/ws`
 
     this.client = new Client({
       // 开发环境经 vite 代理；SockJS 自带降级（xhr-streaming → polling）
       webSocketFactory: () => new SockJS(wsUrl) as unknown as WebSocket,
+      // STOMP CONNECT 帧携带 Authorization 头，token 不再出现在 URL 中
+      connectHeaders: {
+        Authorization: `Bearer ${accessToken}`,
+      },
       reconnectDelay: 3000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,

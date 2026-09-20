@@ -1,6 +1,6 @@
 package com.wetalk.ach.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.ach.service.AchievementService;
 import org.springframework.web.bind.annotation.GetMapping;

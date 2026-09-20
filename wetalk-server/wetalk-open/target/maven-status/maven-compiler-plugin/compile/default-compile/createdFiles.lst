@@ -1,0 +1,12 @@
+com\wetalk\open\entity\ApiKey.class
+com\wetalk\open\controller\WebhookController$CreateWebhookRequest.class
+com\wetalk\open\controller\WebhookController$WebhookView.class
+com\wetalk\open\service\WebhookService.class
+com\wetalk\open\service\ApiKeyService.class
+com\wetalk\open\entity\Webhook.class
+com\wetalk\open\repository\WebhookRepository.class
+com\wetalk\open\controller\OpenApiController$ApiKeyView.class
+com\wetalk\open\controller\OpenApiController$CreateKeyRequest.class
+com\wetalk\open\controller\OpenApiController.class
+com\wetalk\open\controller\WebhookController.class
+com\wetalk\open\repository\ApiKeyRepository.class

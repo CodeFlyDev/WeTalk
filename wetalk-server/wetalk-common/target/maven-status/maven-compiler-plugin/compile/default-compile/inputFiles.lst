@@ -1,0 +1,12 @@
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\AchieveEvent.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\ApiResult.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\BizException.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\config\CorsConfig.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\config\CorsProperties.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\ErrorCode.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\MessageType.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\port\PresencePort.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\port\UserPort.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\security\CurrentUser.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\security\LoginUser.java
+E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\java\com\wetalk\common\WebhookEvent.java
