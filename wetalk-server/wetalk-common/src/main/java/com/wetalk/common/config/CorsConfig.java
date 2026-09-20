@@ -3,6 +3,7 @@ package com.wetalk.common.config;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -17,6 +18,7 @@ import java.util.List;
 public class CorsConfig {
 
     @Bean
+    @Primary
     public CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(props.allowedOrigins());
