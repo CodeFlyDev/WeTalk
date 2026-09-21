@@ -6,13 +6,16 @@ import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * 红包发放消费者：事务消息提交后把 RED_PACKET 消息写入会话（内部发送，含参与者校验与幂等）。
  * 失败抛出异常交由 broker 重试；重试期间 deliver 以 txLog=SENT 幂等。
+ * 开发环境（wetalk.rocketmq.enabled=false）不启动 listener 容器，避免无 nameServer 时启动失败。
  */
 @Component
+@ConditionalOnProperty(name = "wetalk.rocketmq.enabled", havingValue = "true", matchIfMissing = false)
 @RocketMQMessageListener(topic = RedPacketService.TOPIC, consumerGroup = "wetalk-redpacket-issue-cg")
 public class RedPacketIssueConsumer implements RocketMQListener<RedPacketIssueCmd> {
 
