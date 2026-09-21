@@ -1,4 +1,4 @@
-package com.wetalk.auth.security;
+package com.wetalk.common.security;
 
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;
@@ -8,7 +8,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * 当前登录用户读取工具（业务模块统一入口）
+ * 当前登录用户读取工具（业务模块统一入口）。
+ * 放在 wetalk-common 避免模块间循环依赖（auth ↔ user/friend/group/... 均依赖 common）。
  */
 public final class CurrentUser {
 

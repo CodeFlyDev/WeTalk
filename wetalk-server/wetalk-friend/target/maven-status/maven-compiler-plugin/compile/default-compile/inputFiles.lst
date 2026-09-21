@@ -1,0 +1,9 @@
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\controller\FriendController.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\dto\FriendApplyRequest.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\dto\FriendRequestView.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\entity\FriendRequest.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\entity\Friendship.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\repository\FriendRequestRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\repository\FriendshipRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\service\FriendNotifier.java
+E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\java\com\wetalk\friend\service\FriendService.java

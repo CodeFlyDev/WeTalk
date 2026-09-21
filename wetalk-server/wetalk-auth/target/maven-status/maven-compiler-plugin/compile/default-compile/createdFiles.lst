@@ -1,0 +1,10 @@
+com\wetalk\auth\dto\TokenResponse.class
+com\wetalk\auth\security\JwtAuthenticationFilter.class
+com\wetalk\auth\config\SecurityConfig.class
+com\wetalk\auth\controller\AuthController.class
+com\wetalk\auth\dto\LoginRequest.class
+com\wetalk\auth\dto\RefreshRequest.class
+com\wetalk\auth\dto\RegisterRequest.class
+com\wetalk\auth\config\SecurityJwtProperties.class
+com\wetalk\auth\service\AuthService.class
+com\wetalk\auth\jwt\JwtTokenService.class

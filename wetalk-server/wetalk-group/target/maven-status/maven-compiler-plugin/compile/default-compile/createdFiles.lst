@@ -1,0 +1,10 @@
+com\wetalk\group\dto\GroupView$MemberView.class
+com\wetalk\group\repository\GroupRepository.class
+com\wetalk\group\controller\GroupController.class
+com\wetalk\group\dto\GroupView.class
+com\wetalk\group\entity\Group.class
+com\wetalk\group\dto\AnnouncementRequest.class
+com\wetalk\group\service\GroupService.class
+com\wetalk\group\dto\CreateGroupRequest.class
+com\wetalk\group\entity\GroupMember.class
+com\wetalk\group\repository\GroupMemberRepository.class

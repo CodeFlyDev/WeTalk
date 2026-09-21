@@ -7,10 +7,10 @@ import com.wetalk.message.dto.ScheduleCreateRequest;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
 import com.wetalk.message.entity.ScheduledMessage;
+import com.wetalk.common.port.UserPort;
 import com.wetalk.message.port.FriendPort;
 import com.wetalk.message.port.GroupPort;
 import com.wetalk.message.repository.ScheduledMessageRepository;
-import com.wetalk.user.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -32,18 +32,18 @@ public class ScheduledMessageService {
 
     private final ScheduledMessageRepository repository;
     private final MessageService messageService;
-    private final UserService userService;
+    private final UserPort userPort;
     private final FriendPort friendPort;
     private final GroupPort groupPort;
 
     public ScheduledMessageService(ScheduledMessageRepository repository,
                                    MessageService messageService,
-                                   UserService userService,
+                                   UserPort userPort,
                                    FriendPort friendPort,
                                    GroupPort groupPort) {
         this.repository = repository;
         this.messageService = messageService;
-        this.userService = userService;
+        this.userPort = userPort;
         this.friendPort = friendPort;
         this.groupPort = groupPort;
     }
@@ -62,7 +62,7 @@ public class ScheduledMessageService {
                 throw new BizException(ErrorCode.NOT_GROUP_MEMBER, "不是群成员，无法定时发送");
             }
         } else {
-            if (!userService.existsById(request.receiverId())) {
+            if (!userPort.existsById(request.receiverId())) {
                 throw new BizException(ErrorCode.USER_NOT_FOUND, "接收用户不存在");
             }
             if (!friendPort.areFriends(userId, request.receiverId())) {

@@ -1,0 +1,12 @@
+com\wetalk\social\service\PostService.class
+com\wetalk\social\dto\PostView$CommentView.class
+com\wetalk\social\dto\PostView.class
+com\wetalk\social\repository\PostLikeRepository.class
+com\wetalk\social\controller\PostController.class
+com\wetalk\social\controller\PostController$PublishRequest.class
+com\wetalk\social\entity\Post.class
+com\wetalk\social\entity\PostLike.class
+com\wetalk\social\controller\PostController$CommentRequest.class
+com\wetalk\social\repository\PostRepository.class
+com\wetalk\social\entity\PostComment.class
+com\wetalk\social\repository\PostCommentRepository.class

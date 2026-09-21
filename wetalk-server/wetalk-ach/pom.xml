@@ -18,7 +18,7 @@
             <groupId>com.wetalk</groupId>
             <artifactId>wetalk-common</artifactId>
         </dependency>
-        <!-- 在线状态判断（PresenceService） -->
+        <!-- STOMP 推送（SimpMessagingTemplate）+ 在线状态防腐接口 -->
         <dependency>
             <groupId>com.wetalk</groupId>
             <artifactId>wetalk-message</artifactId>

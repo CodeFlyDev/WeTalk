@@ -4,7 +4,7 @@ import com.wetalk.auth.dto.LoginRequest;
 import com.wetalk.auth.dto.RefreshRequest;
 import com.wetalk.auth.dto.RegisterRequest;
 import com.wetalk.auth.dto.TokenResponse;
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.auth.service.AuthService;
 import com.wetalk.common.ApiResult;
 import com.wetalk.user.dto.UserView;

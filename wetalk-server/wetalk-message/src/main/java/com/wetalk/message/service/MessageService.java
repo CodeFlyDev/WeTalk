@@ -9,13 +9,13 @@ import com.wetalk.message.dto.GroupFileView;
 import com.wetalk.message.dto.MessageView;
 import com.wetalk.message.dto.SendMessageRequest;
 import com.wetalk.message.dto.SendResult;
+import com.wetalk.common.port.UserPort;
 import com.wetalk.message.port.FriendPort;
 import com.wetalk.message.port.GroupPort;
 import com.wetalk.message.presence.UnreadService;
 import com.wetalk.message.repository.MessageRepository;
 import com.wetalk.message.search.MessageIndexer;
 import com.wetalk.message.util.ConversationIds;
-import com.wetalk.user.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,7 +39,7 @@ public class MessageService {
     private static final java.time.Duration RECALL_WINDOW = java.time.Duration.ofMinutes(2);
 
     private final MessageRepository messageRepository;
-    private final UserService userService;
+    private final UserPort userPort;
     private final FriendPort friendPort;
     private final GroupPort groupPort;
     private final MessageDeliveryService deliveryService;
@@ -48,7 +48,7 @@ public class MessageService {
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public MessageService(MessageRepository messageRepository,
-                          UserService userService,
+                          UserPort userPort,
                           FriendPort friendPort,
                           GroupPort groupPort,
                           MessageDeliveryService deliveryService,
@@ -56,7 +56,7 @@ public class MessageService {
                           MessageIndexer searchIndexer,
                           org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.messageRepository = messageRepository;
-        this.userService = userService;
+        this.userPort = userPort;
         this.friendPort = friendPort;
         this.groupPort = groupPort;
         this.deliveryService = deliveryService;
@@ -101,7 +101,7 @@ public class MessageService {
                     .filter(id -> !id.equals(senderId))
                     .toList();
         } else {
-            if (!userService.existsById(request.receiverId())) {
+            if (!userPort.existsById(request.receiverId())) {
                 throw new BizException(ErrorCode.USER_NOT_FOUND, "接收用户不存在");
             }
             if (!friendPort.areFriends(senderId, request.receiverId())) {
@@ -260,8 +260,9 @@ public class MessageService {
             throw new BizException(ErrorCode.NOT_GROUP_MEMBER, "不是群成员");
         }
         return messageRepository
-                .findTop100ByConversationIdAndTypeOrderByCreatedAtDesc(
-                        ConversationIds.group(groupId), MessageType.FILE)
+                .findByConversationIdAndTypeOrderByCreatedAtDesc(
+                        ConversationIds.group(groupId), MessageType.FILE,
+                        org.springframework.data.domain.PageRequest.of(0, 100))
                 .stream()
                 .map(doc -> new GroupFileView(doc.getId(), doc.getSenderId(),
                         doc.getContent(), doc.getRefObjectKey(), doc.getCreatedAt()))
@@ -277,9 +278,9 @@ public class MessageService {
     public List<MessageView> recent(Long userId, String conversationId, int limit) {
         assertParticipant(userId, conversationId);
         int size = limit <= 0 ? 20 : Math.min(limit, 50);
-        return messageRepository.findTop50ByConversationIdOrderByCreatedAtDesc(conversationId)
+        return messageRepository.findByConversationIdOrderByCreatedAtDesc(
+                        conversationId, org.springframework.data.domain.PageRequest.of(0, size))
                 .stream()
-                .limit(size)
                 .map(MessageDeliveryService::toView)
                 .toList()
                 .reversed();
@@ -290,11 +291,11 @@ public class MessageService {
         assertParticipant(userId, conversationId);
         int size = limit <= 0 ? 20 : Math.min(limit, 50);
         List<MessageDoc> docs = before == null
-                ? messageRepository.findTop50ByConversationIdOrderByCreatedAtDesc(conversationId)
-                : messageRepository.findTop50ByConversationIdAndCreatedAtLessThanOrderByCreatedAtDesc(
-                        conversationId, before);
+                ? messageRepository.findByConversationIdOrderByCreatedAtDesc(
+                        conversationId, org.springframework.data.domain.PageRequest.of(0, size))
+                : messageRepository.findByConversationIdAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        conversationId, before, org.springframework.data.domain.PageRequest.of(0, size));
         return docs.stream()
-                .limit(size)
                 .map(MessageDeliveryService::toView)
                 .toList()
                 .reversed();

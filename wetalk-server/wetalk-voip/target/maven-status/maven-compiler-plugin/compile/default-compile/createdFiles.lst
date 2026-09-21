@@ -1,0 +1,11 @@
+com\wetalk\voip\repository\VoiceRoomRepository.class
+com\wetalk\voip\service\VoiceRoomService$1.class
+com\wetalk\voip\controller\VoiceRoomController.class
+com\wetalk\voip\controller\VoiceRoomController$RoomView.class
+com\wetalk\voip\controller\VoiceRoomController$CreateRequest.class
+com\wetalk\voip\service\VoiceRoomService.class
+com\wetalk\voip\service\VoipSignalingService.class
+com\wetalk\voip\dto\VoipEvent.class
+com\wetalk\voip\dto\VoipSignal.class
+com\wetalk\voip\entity\VoiceRoom.class
+com\wetalk\voip\ws\VoipSignalingController.class

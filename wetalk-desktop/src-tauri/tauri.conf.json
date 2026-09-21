@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.wetalk.desktop",
   "build": {
-    "devUrl": "http://localhost:5173",
-    "frontendDist": "../wetalk-web/dist"
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,

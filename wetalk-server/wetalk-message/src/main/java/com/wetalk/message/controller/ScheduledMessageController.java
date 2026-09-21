@@ -1,6 +1,6 @@
 package com.wetalk.message.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.message.dto.ScheduleCreateRequest;
 import com.wetalk.message.service.ScheduledMessageService;

@@ -1,6 +1,6 @@
 package com.wetalk.wallet.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.wallet.dto.WalletView;
 import com.wetalk.wallet.service.WalletService;

@@ -2,6 +2,7 @@ package com.wetalk.message.document;
 
 import com.wetalk.common.MessageType;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -17,6 +18,10 @@ public class MessageDoc {
 
     @Id
     private String id;
+
+    /** 乐观锁版本号：撤回/置顶/焚毁等并发写操作时防止 last-write-wins 丢更新 */
+    @Version
+    private Long version;
 
     /** 单聊 dm:{minId}:{maxId}；群聊 g:{groupId} */
     private String conversationId;

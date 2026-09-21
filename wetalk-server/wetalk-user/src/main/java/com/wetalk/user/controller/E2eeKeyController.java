@@ -1,6 +1,6 @@
 package com.wetalk.user.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.user.entity.E2eeKey;
 import com.wetalk.user.repository.E2eeKeyRepository;

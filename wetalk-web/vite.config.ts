@@ -11,6 +11,10 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(rootDir, 'src') }
   },
+  define: {
+    // sockjs-client 引用 Node.js global，浏览器用 globalThis 替代
+    global: 'globalThis'
+  },
   server: {
     port: 5173,
     proxy: {

@@ -1,6 +1,6 @@
 package com.wetalk.stat.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.common.BizException;
 import com.wetalk.common.ErrorCode;

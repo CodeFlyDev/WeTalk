@@ -14,8 +14,9 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import java.util.Map;
 
 /**
- * WebSocket 握手鉴权：token 取自 query 参数 ?token= 或 Authorization 头。
- * 校验通过后把 userId 放入握手 attributes，供 HandshakeHandler 构造 Principal。
+ * WebSocket 握手鉴权：优先从 Authorization 头提取 token（向后兼容 query ?token=）。
+ * 鉴权在 STOMP CONNECT 帧中由 StompAuthChannelInterceptor 完成；
+ * 此处仅在握手时携带 token 时预置 userId（兼容旧客户端），无 token 时放行。
  */
 @Component
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
@@ -33,24 +34,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        String token = null;
-        if (request instanceof ServletServerHttpRequest servletRequest) {
-            token = servletRequest.getServletRequest().getParameter("token");
-            if (token == null || token.isBlank()) {
-                String header = servletRequest.getServletRequest().getHeader("Authorization");
-                if (header != null && header.startsWith("Bearer ")) {
-                    token = header.substring(7);
-                }
+        String token = extractToken(request);
+        if (token != null) {
+            var loginUser = jwtTokenService.parseAccess(token);
+            if (loginUser.isPresent()) {
+                attributes.put(ATTR_USER_ID, loginUser.get().userId());
             }
         }
-        var loginUser = token == null ? java.util.Optional.<com.wetalk.auth.security.LoginUser>empty()
-                : jwtTokenService.parseAccess(token);
-        if (loginUser.isEmpty()) {
-            log.warn("ws handshake rejected: invalid token, uri={}", request.getURI());
-            response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            return false;
-        }
-        attributes.put(ATTR_USER_ID, loginUser.get().userId());
+        // 无 token 时也放行 —— 真正鉴权在 STOMP CONNECT 帧
         return true;
     }
 
@@ -58,5 +49,21 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {
         // no-op
+    }
+
+    private String extractToken(ServerHttpRequest request) {
+        if (request instanceof ServletServerHttpRequest servletRequest) {
+            // 优先 Authorization 头
+            String header = servletRequest.getServletRequest().getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                return header.substring(7);
+            }
+            // 向后兼容 query ?token=（将在后续版本废弃）
+            String queryToken = servletRequest.getServletRequest().getParameter("token");
+            if (queryToken != null && !queryToken.isBlank()) {
+                return queryToken;
+            }
+        }
+        return null;
     }
 }

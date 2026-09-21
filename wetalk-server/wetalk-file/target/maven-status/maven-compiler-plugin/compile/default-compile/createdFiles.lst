@@ -1,0 +1,6 @@
+com\wetalk\file\service\FileService.class
+com\wetalk\file\config\MinioProperties.class
+com\wetalk\file\controller\FileController.class
+com\wetalk\file\dto\PresignResult.class
+com\wetalk\file\config\MinioConfig.class
+com\wetalk\file\dto\PresignRequest.class

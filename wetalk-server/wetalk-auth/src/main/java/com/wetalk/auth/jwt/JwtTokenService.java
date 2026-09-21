@@ -1,6 +1,7 @@
 package com.wetalk.auth.jwt;
 
 import com.wetalk.auth.config.SecurityJwtProperties;
+import com.wetalk.common.security.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

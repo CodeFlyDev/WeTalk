@@ -4,15 +4,12 @@ import com.wetalk.ai.dto.ChatRequest;
 import com.wetalk.ai.service.KnowledgeService;
 import com.wetalk.ai.service.OllamaService;
 import com.wetalk.ai.service.TranscribeService;
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * AI 能力入口：语音转写 / AI 助手（Ollama）/ 聊天摘要

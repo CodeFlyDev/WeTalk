@@ -1,5 +1,6 @@
 package com.wetalk.message.presence;
 
+import com.wetalk.common.port.PresencePort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * P0 单实例（模块化单体）在线表；Phase 3 多实例时升级为网关路由表。
  */
 @Service
-public class PresenceService {
+public class PresenceService implements PresencePort {
 
     private static final String ONLINE_KEY = "wetalk:online:";
     private static final Duration ONLINE_TTL = Duration.ofSeconds(300);
@@ -39,6 +40,7 @@ public class PresenceService {
         }
     }
 
+    @Override
     public boolean isOnline(Long userId) {
         return Boolean.TRUE.equals(redis.hasKey(ONLINE_KEY + userId));
     }

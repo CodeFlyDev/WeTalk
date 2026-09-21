@@ -11,5 +11,25 @@
 
     <artifactId>wetalk-common</artifactId>
     <name>wetalk-common</name>
-    <description>公共 DTO、枚举、工具</description>
+    <description>公共 DTO、枚举、工具、防腐接口（UserPort / PresencePort）、共享配置（CorsProperties）</description>
+
+    <dependencies>
+        <!-- @ConfigurationProperties / @EnableConfigurationProperties / @Configuration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <!-- CorsConfiguration / CorsConfigurationSource / UrlBasedCorsConfigurationSource -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- CurrentUser: SecurityContextHolder / Authentication -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 </project>

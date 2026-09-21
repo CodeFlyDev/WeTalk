@@ -1,0 +1,4 @@
+com\wetalk\game\service\GameService.class
+com\wetalk\game\dto\GameRequest.class
+com\wetalk\game\ws\GameController.class
+com\wetalk\game\service\GameService$GameSession.class

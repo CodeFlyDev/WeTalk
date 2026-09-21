@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+/** 从 client.ts 转发导出，方便组件统一从 @/lib/utils 引入 */
+export { errorMessage } from '@/api/client'
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

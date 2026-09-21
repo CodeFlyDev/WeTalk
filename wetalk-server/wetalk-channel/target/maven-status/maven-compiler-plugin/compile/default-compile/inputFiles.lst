@@ -1,0 +1,8 @@
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\controller\ChannelController.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\entity\Channel.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\entity\ChannelMember.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\mongo\ChannelMessageDoc.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\mongo\ChannelMessageRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\repository\ChannelMemberRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\repository\ChannelRepository.java
+E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\java\com\wetalk\channel\service\ChannelService.java

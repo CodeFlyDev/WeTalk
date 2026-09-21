@@ -1,0 +1,6 @@
+com\wetalk\ach\controller\AchievementController.class
+com\wetalk\ach\repository\UserAchievementRepository.class
+com\wetalk\ach\service\AchievementService.class
+com\wetalk\ach\entity\UserAchievement.class
+com\wetalk\ach\service\AchievementListener.class
+com\wetalk\ach\Achievement.class

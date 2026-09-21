@@ -1,0 +1,10 @@
+com\wetalk\user\controller\E2eeKeyController$PublicKeyRequest.class
+com\wetalk\user\repository\E2eeKeyRepository.class
+com\wetalk\user\service\UserService.class
+com\wetalk\user\repository\UserAccountRepository.class
+com\wetalk\user\controller\E2eeKeyController.class
+com\wetalk\user\controller\UserController$AvatarRequest.class
+com\wetalk\user\entity\E2eeKey.class
+com\wetalk\user\controller\UserController.class
+com\wetalk\user\dto\UserView.class
+com\wetalk\user\entity\UserAccount.class

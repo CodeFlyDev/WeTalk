@@ -1,0 +1,10 @@
+com\wetalk\channel\controller\ChannelController$SendRequest.class
+com\wetalk\channel\entity\ChannelMember.class
+com\wetalk\channel\mongo\ChannelMessageRepository.class
+com\wetalk\channel\repository\ChannelRepository.class
+com\wetalk\channel\controller\ChannelController.class
+com\wetalk\channel\repository\ChannelMemberRepository.class
+com\wetalk\channel\entity\Channel.class
+com\wetalk\channel\controller\ChannelController$CreateRequest.class
+com\wetalk\channel\service\ChannelService.class
+com\wetalk\channel\mongo\ChannelMessageDoc.class

@@ -1,6 +1,6 @@
 package com.wetalk.user.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import com.wetalk.user.dto.UserView;
 import com.wetalk.user.service.UserService;

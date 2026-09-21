@@ -1,6 +1,6 @@
 package com.wetalk.channel.controller;
 
-import com.wetalk.auth.security.CurrentUser;
+import com.wetalk.common.security.CurrentUser;
 import com.wetalk.channel.service.ChannelService;
 import com.wetalk.common.ApiResult;
 import jakarta.validation.Valid;

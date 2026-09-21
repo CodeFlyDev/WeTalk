@@ -1,0 +1,9 @@
+com\wetalk\friend\dto\FriendApplyRequest.class
+com\wetalk\friend\dto\FriendRequestView.class
+com\wetalk\friend\entity\Friendship.class
+com\wetalk\friend\controller\FriendController.class
+com\wetalk\friend\repository\FriendRequestRepository.class
+com\wetalk\friend\repository\FriendshipRepository.class
+com\wetalk\friend\service\FriendService.class
+com\wetalk\friend\service\FriendNotifier.class
+com\wetalk\friend\entity\FriendRequest.class
