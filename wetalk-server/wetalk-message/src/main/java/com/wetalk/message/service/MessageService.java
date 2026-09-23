@@ -72,7 +72,7 @@ public class MessageService {
 
     /** 模块内部发送：跳过客户端类型白名单（RED_PACKET 等业务消息由服务端产生），其余校验与推送链路一致 */
     public SendResult sendInternal(Long senderId, SendMessageRequest request) {
-        if (request.isGroupMessage() == (request.receiverId() == null)) {
+        if ((request.groupId() == null) == (request.receiverId() == null)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "receiverId 与 groupId 必须二选一");
         }
         return doSend(senderId, request);
@@ -367,7 +367,7 @@ public class MessageService {
         if (!CLIENT_SENDABLE.contains(request.type())) {
             throw new BizException(ErrorCode.BAD_REQUEST, "不允许的消息类型: " + request.type());
         }
-        if (request.isGroupMessage() == (request.receiverId() == null)) {
+        if ((request.groupId() == null) == (request.receiverId() == null)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "receiverId 与 groupId 必须二选一");
         }
     }
