@@ -7,6 +7,7 @@ import com.wetalk.ai.service.TranscribeService;
 import com.wetalk.common.security.CurrentUser;
 import com.wetalk.common.ApiResult;
 import jakarta.validation.Valid;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,10 +21,10 @@ public class AiController {
 
     private final TranscribeService transcribeService;
     private final OllamaService ollamaService;
-    private final KnowledgeService knowledgeService;
+    private final @Nullable KnowledgeService knowledgeService;
 
     public AiController(TranscribeService transcribeService, OllamaService ollamaService,
-                        KnowledgeService knowledgeService) {
+                        @Nullable KnowledgeService knowledgeService) {
         this.transcribeService = transcribeService;
         this.ollamaService = ollamaService;
         this.knowledgeService = knowledgeService;
@@ -38,7 +39,7 @@ public class AiController {
     /** AI 助手对话（历史由客户端携带，服务端不落库；useKnowledge=true 时检索知识库注入） */
     @PostMapping("/chat")
     public ApiResult<String> chat(@Valid @RequestBody ChatRequest request) {
-        String context = Boolean.TRUE.equals(request.useKnowledge())
+        String context = Boolean.TRUE.equals(request.useKnowledge()) && knowledgeService != null
                 ? knowledgeService.buildContext(CurrentUser.id(), request.message(), 3)
                 : null;
         return ApiResult.ok(ollamaService.chat(request.history(), request.message(), context));
@@ -71,6 +72,7 @@ public class AiController {
     @PostMapping("/knowledge")
     public ApiResult<KnowledgeService.KnowledgeDocView> addKnowledge(
             @org.springframework.web.bind.annotation.RequestBody KnowledgeAddRequest request) {
+        if (knowledgeService == null) throw new com.wetalk.common.BizException(com.wetalk.common.ErrorCode.BAD_REQUEST, "知识库未启用");
         if (request.text() == null || request.text().isBlank()) {
             throw new com.wetalk.common.BizException(com.wetalk.common.ErrorCode.BAD_REQUEST, "文本内容不能为空");
         }
@@ -80,13 +82,14 @@ public class AiController {
     /** 我的文档列表 */
     @GetMapping("/knowledge")
     public ApiResult<List<KnowledgeService.KnowledgeDocView>> myKnowledge() {
+        if (knowledgeService == null) return ApiResult.ok(List.of());
         return ApiResult.ok(knowledgeService.docs(CurrentUser.id()));
     }
 
     /** 删除整篇文档 */
     @org.springframework.web.bind.annotation.DeleteMapping("/knowledge/{docId}")
     public ApiResult<Void> deleteKnowledge(@org.springframework.web.bind.annotation.PathVariable String docId) {
-        knowledgeService.delete(CurrentUser.id(), docId);
+        if (knowledgeService != null) knowledgeService.delete(CurrentUser.id(), docId);
         return ApiResult.ok(null);
     }
 }

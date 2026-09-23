@@ -1,0 +1,552 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] wetalk-server                                                      [pom]
+[INFO] wetalk-common                                                      [jar]
+[INFO] wetalk-user                                                        [jar]
+[INFO] wetalk-auth                                                        [jar]
+[INFO] wetalk-message                                                     [jar]
+[INFO] wetalk-friend                                                      [jar]
+[INFO] wetalk-group                                                       [jar]
+[INFO] wetalk-file                                                        [jar]
+[INFO] wetalk-voip                                                        [jar]
+[INFO] wetalk-social                                                      [jar]
+[INFO] wetalk-channel                                                     [jar]
+[INFO] wetalk-ach                                                         [jar]
+[INFO] wetalk-game                                                        [jar]
+[INFO] wetalk-open                                                        [jar]
+[INFO] wetalk-stat                                                        [jar]
+[INFO] wetalk-wallet                                                      [jar]
+[INFO] wetalk-ai                                                          [jar]
+[INFO] wetalk-ai-app                                                      [jar]
+[INFO] wetalk-gateway                                                     [jar]
+[INFO] wetalk-app                                                         [jar]
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-server >----------------------
+[INFO] Building wetalk-server 0.1.0-SNAPSHOT                             [1/20]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-common >----------------------
+[INFO] Building wetalk-common 0.1.0-SNAPSHOT                             [2/20]
+[INFO]   from wetalk-common\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-common ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-common\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-common ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 12 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-common ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-common\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-common ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-common ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-common ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-common\target\wetalk-common-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-user >-----------------------
+[INFO] Building wetalk-user 0.1.0-SNAPSHOT                               [3/20]
+[INFO]   from wetalk-user\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-user ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-user\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-user\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-user ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 8 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-user ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-user\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-user ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-user ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-user ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-user\target\wetalk-user-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-auth >-----------------------
+[INFO] Building wetalk-auth 0.1.0-SNAPSHOT                               [4/20]
+[INFO]   from wetalk-auth\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-auth ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-auth\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-auth\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-auth ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 10 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-auth ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-auth\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-auth ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-auth ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-auth ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-auth\target\wetalk-auth-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ---------------------< com.wetalk:wetalk-message >----------------------
+[INFO] Building wetalk-message 0.1.0-SNAPSHOT                            [5/20]
+[INFO]   from wetalk-message\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-message ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-message\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-message\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-message ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 45 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-message ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-message\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-message ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-message ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-message ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-message\target\wetalk-message-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-friend >----------------------
+[INFO] Building wetalk-friend 0.1.0-SNAPSHOT                             [6/20]
+[INFO]   from wetalk-friend\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-friend ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-friend\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-friend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 9 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-friend ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-friend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-friend ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-friend ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-friend ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-friend\target\wetalk-friend-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-group >-----------------------
+[INFO] Building wetalk-group 0.1.0-SNAPSHOT                              [7/20]
+[INFO]   from wetalk-group\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-group ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-group\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-group ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 9 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-group ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-group\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-group ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-group ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-group ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-group\target\wetalk-group-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-file >-----------------------
+[INFO] Building wetalk-file 0.1.0-SNAPSHOT                               [8/20]
+[INFO]   from wetalk-file\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-file ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-file\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-file\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-file ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 6 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-file ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-file\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-file ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-file ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-file ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-file\target\wetalk-file-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-voip >-----------------------
+[INFO] Building wetalk-voip 0.1.0-SNAPSHOT                               [9/20]
+[INFO]   from wetalk-voip\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-voip ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-voip\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-voip ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 8 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-voip ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-voip\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-voip ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-voip ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-voip ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-voip\target\wetalk-voip-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-social >----------------------
+[INFO] Building wetalk-social 0.1.0-SNAPSHOT                            [10/20]
+[INFO]   from wetalk-social\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-social ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-social\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-social ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 9 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-social ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-social\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-social ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-social ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-social ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-social\target\wetalk-social-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ---------------------< com.wetalk:wetalk-channel >----------------------
+[INFO] Building wetalk-channel 0.1.0-SNAPSHOT                           [11/20]
+[INFO]   from wetalk-channel\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-channel ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-channel\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-channel ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 8 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-channel ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-channel\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-channel ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-channel ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-channel ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-channel\target\wetalk-channel-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-ach >------------------------
+[INFO] Building wetalk-ach 0.1.0-SNAPSHOT                               [12/20]
+[INFO]   from wetalk-ach\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-ach ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ach\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ach\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-ach ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 6 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-ach ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ach\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-ach ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-ach ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-ach ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-ach\target\wetalk-ach-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-game >-----------------------
+[INFO] Building wetalk-game 0.1.0-SNAPSHOT                              [13/20]
+[INFO]   from wetalk-game\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-game ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-game\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-game\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-game ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-game ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-game\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-game ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-game ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-game ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-game\target\wetalk-game-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-open >-----------------------
+[INFO] Building wetalk-open 0.1.0-SNAPSHOT                              [14/20]
+[INFO]   from wetalk-open\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-open ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-open\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-open\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-open ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 8 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-open ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-open\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-open ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-open ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-open ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-open\target\wetalk-open-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-stat >-----------------------
+[INFO] Building wetalk-stat 0.1.0-SNAPSHOT                              [15/20]
+[INFO]   from wetalk-stat\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-stat ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-stat\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-stat\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-stat ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-stat ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-stat\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-stat ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-stat ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-stat ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-stat\target\wetalk-stat-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-wallet >----------------------
+[INFO] Building wetalk-wallet 0.1.0-SNAPSHOT                            [16/20]
+[INFO]   from wetalk-wallet\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] 1 problem was encountered while building the effective model for org.javassist:javassist:jar:3.21.0-GA during dependency collection step for project (use -X to see details)
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-wallet ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-wallet\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-wallet\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-wallet ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 22 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-wallet ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-wallet\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-wallet ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-wallet ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-wallet ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-wallet\target\wetalk-wallet-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ------------------------< com.wetalk:wetalk-ai >------------------------
+[INFO] Building wetalk-ai 0.1.0-SNAPSHOT                                [17/20]
+[INFO]   from wetalk-ai\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-ai ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ai\src\main\resources
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ai\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-ai ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 13 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-ai ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ai\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-ai ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-ai ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-ai ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-ai\target\wetalk-ai-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] ----------------------< com.wetalk:wetalk-ai-app >----------------------
+[INFO] Building wetalk-ai-app 0.1.0-SNAPSHOT                            [18/20]
+[INFO]   from wetalk-ai-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-ai-app ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-ai-app ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-ai-app ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-ai-app\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-ai-app ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-ai-app ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-ai-app ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-ai-app\target\wetalk-ai-app-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot:3.4.1:repackage (repackage) @ wetalk-ai-app ---
+[INFO] Replacing main artifact E:\Github\WeTalk\wetalk-server\wetalk-ai-app\target\wetalk-ai-app-0.1.0-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+[INFO] The original artifact has been renamed to E:\Github\WeTalk\wetalk-server\wetalk-ai-app\target\wetalk-ai-app-0.1.0-SNAPSHOT.jar.original
+[INFO] 
+[INFO] ---------------------< com.wetalk:wetalk-gateway >----------------------
+[INFO] Building wetalk-gateway 0.1.0-SNAPSHOT                           [19/20]
+[INFO]   from wetalk-gateway\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-gateway ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-gateway ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 1 source file with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-gateway ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-gateway\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-gateway ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-gateway ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-gateway ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-gateway\target\wetalk-gateway-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------------< com.wetalk:wetalk-app >------------------------
+[INFO] Building wetalk-app 0.1.0-SNAPSHOT                               [20/20]
+[INFO]   from wetalk-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wetalk-app ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ wetalk-app ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wetalk-app ---
+[INFO] skip non existing resourceDirectory E:\Github\WeTalk\wetalk-server\wetalk-app\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ wetalk-app ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ wetalk-app ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ wetalk-app ---
+[INFO] Building jar: E:\Github\WeTalk\wetalk-server\wetalk-app\target\wetalk-app-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot:3.4.1:repackage (repackage) @ wetalk-app ---
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for wetalk-server 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] wetalk-server ...................................... SUCCESS [  0.008 s]
+[INFO] wetalk-common ...................................... SUCCESS [  9.092 s]
+[INFO] wetalk-user ........................................ SUCCESS [  4.988 s]
+[INFO] wetalk-auth ........................................ SUCCESS [  4.150 s]
+[INFO] wetalk-message ..................................... SUCCESS [  7.142 s]
+[INFO] wetalk-friend ...................................... SUCCESS [  3.858 s]
+[INFO] wetalk-group ....................................... SUCCESS [  3.489 s]
+[INFO] wetalk-file ........................................ SUCCESS [  3.129 s]
+[INFO] wetalk-voip ........................................ SUCCESS [  4.378 s]
+[INFO] wetalk-social ...................................... SUCCESS [  3.544 s]
+[INFO] wetalk-channel ..................................... SUCCESS [  2.282 s]
+[INFO] wetalk-ach ......................................... SUCCESS [  3.485 s]
+[INFO] wetalk-game ........................................ SUCCESS [  3.256 s]
+[INFO] wetalk-open ........................................ SUCCESS [  3.251 s]
+[INFO] wetalk-stat ........................................ SUCCESS [  3.007 s]
+[INFO] wetalk-wallet ...................................... SUCCESS [  7.485 s]
+[INFO] wetalk-ai .......................................... SUCCESS [  3.652 s]
+[INFO] wetalk-ai-app ...................................... SUCCESS [  8.400 s]
+[INFO] wetalk-gateway ..................................... SUCCESS [  3.380 s]
+[INFO] wetalk-app ......................................... FAILURE [  6.305 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:30 min
+[INFO] Finished at: 2026-09-23T13:30:18+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.4.1:repackage (repackage) on project wetalk-app: Execution repackage of goal org.springframework.boot:spring-boot-maven-plugin:3.4.1:repackage failed: Unable to rename 'E:\Github\WeTalk\wetalk-server\wetalk-app\target\wetalk-app-0.1.0-SNAPSHOT.jar' to 'E:\Github\WeTalk\wetalk-server\wetalk-app\target\wetalk-app-0.1.0-SNAPSHOT.jar.original' -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/PluginExecutionException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :wetalk-app
+
+---

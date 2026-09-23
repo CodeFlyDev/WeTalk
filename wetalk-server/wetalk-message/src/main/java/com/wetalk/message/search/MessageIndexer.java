@@ -9,6 +9,7 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
  * 所有操作静默降级（try-catch），ES 不可用不影响消息主链路。
  */
 @Service
+@ConditionalOnProperty(prefix = "wetalk.es", name = "enabled", havingValue = "true", matchIfMissing = false)
 public class MessageIndexer {
 
     private static final Logger log = LoggerFactory.getLogger(MessageIndexer.class);

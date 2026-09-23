@@ -5,6 +5,14 @@ spring:
   application:
     name: wetalk-core
 
+  # ES 禁用（服务器内存不够，Phase 8 再启），Kafka 保留（有 try-catch 兜底）
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestHighLevelClientAutoConfiguration
+
   # ---- Nacos 注册发现 + Sentinel 流控（Phase 8；本机裸跑可 NACOS_ENABLED=false）----
   cloud:
     nacos:
@@ -57,6 +65,8 @@ rocketmq:
 
 # ---- WeTalk 自有配置 ----
 wetalk:
+  es:
+    enabled: ${WETALK_ES_ENABLED:false}
   jwt:
     # HS256 密钥，不少于 32 字节；生产必须通过环境变量注入
     secret: ${JWT_SECRET:dev-jwt-secret-change-me-32bytes!!}

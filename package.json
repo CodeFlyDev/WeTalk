@@ -1,0 +1,30 @@
+{
+  "name": "wetalk",
+  "version": "1.0.0",
+  "description": "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)\r [![Java](https://img.shields.io/badge/java-21-orange.svg)](https://adoptium.net/)\r [![Spring Boot](https://img.shields.io/badge/spring--boot-3.4-brightgreen.svg)](https://spring.io/)\r [![React](https://img.shields.io/badge/react-18-blue.svg)](https://react.dev/)\r [![Tauri](https://img.shields.io/badge/tauri-2-black.svg)](https://tauri.app/)",
+  "main": "index.js",
+  "dependencies": {
+    "asn1": "^0.2.6",
+    "bcrypt-pbkdf": "^1.0.2",
+    "nan": "^2.29.0",
+    "safer-buffer": "^2.1.2",
+    "ssh2": "^1.17.0",
+    "tweetnacl": "^0.14.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeFlyDev/WeTalk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CodeFlyDev/WeTalk/issues"
+  },
+  "homepage": "https://github.com/CodeFlyDev/WeTalk#readme"
+}

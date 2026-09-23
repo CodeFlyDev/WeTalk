@@ -562,7 +562,9 @@ export const useCallStore = create<CallState>((set, get) => {
         toast.error('连接未就绪，稍后再试')
         return
       }
-      const callId = crypto.randomUUID()
+      const callId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
       try {
         await getLocalMedia(media)
       } catch {
