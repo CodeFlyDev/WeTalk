@@ -16,6 +16,7 @@ import com.wetalk.message.presence.UnreadService;
 import com.wetalk.message.repository.MessageRepository;
 import com.wetalk.message.search.MessageIndexer;
 import com.wetalk.message.util.ConversationIds;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -44,7 +45,7 @@ public class MessageService {
     private final GroupPort groupPort;
     private final MessageDeliveryService deliveryService;
     private final UnreadService unreadService;
-    private final MessageIndexer searchIndexer;
+    private final @Nullable MessageIndexer searchIndexer;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public MessageService(MessageRepository messageRepository,
@@ -53,7 +54,7 @@ public class MessageService {
                           GroupPort groupPort,
                           MessageDeliveryService deliveryService,
                           UnreadService unreadService,
-                          MessageIndexer searchIndexer,
+                          @Nullable MessageIndexer searchIndexer,
                           org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.messageRepository = messageRepository;
         this.userPort = userPort;
@@ -72,7 +73,7 @@ public class MessageService {
 
     /** 模块内部发送：跳过客户端类型白名单（RED_PACKET 等业务消息由服务端产生），其余校验与推送链路一致 */
     public SendResult sendInternal(Long senderId, SendMessageRequest request) {
-        if (request.isGroupMessage() == (request.receiverId() == null)) {
+        if ((request.groupId() == null) == (request.receiverId() == null)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "receiverId 与 groupId 必须二选一");
         }
         return doSend(senderId, request);
@@ -133,7 +134,7 @@ public class MessageService {
 
         messageRepository.save(doc);
         deliveryService.deliver(doc, recipients);
-        searchIndexer.index(doc);
+        if (searchIndexer != null) searchIndexer.index(doc);
         publishAchievement(senderId, request.type());
         eventPublisher.publishEvent(new com.wetalk.common.WebhookEvent(
                 doc.getId(), doc.getConversationId(), senderId, doc.getReceiverId(),
@@ -172,7 +173,7 @@ public class MessageService {
         doc.setRecalled(true);
         doc.setRecalledAt(LocalDateTime.now());
         messageRepository.save(doc);
-        searchIndexer.delete(messageId);
+        if (searchIndexer != null) searchIndexer.delete(messageId);
 
         List<Long> recipients = recipientsOf(doc, userId);
         deliveryService.deliverRecall(MessageDeliveryService.toView(doc), recipients);
@@ -195,7 +196,7 @@ public class MessageService {
         doc.setContent(null);
         doc.setRefObjectKey(null);
         messageRepository.save(doc);
-        searchIndexer.delete(messageId);
+        if (searchIndexer != null) searchIndexer.delete(messageId);
         deliveryService.deliverRecall(MessageDeliveryService.toView(doc), recipientsOf(doc, userId));
         return MessageDeliveryService.toView(doc);
     }
@@ -313,12 +314,14 @@ public class MessageService {
     public List<MessageView> search(Long userId, String conversationId, String keyword, int limit) {
         assertParticipant(userId, conversationId);
         int size = limit <= 0 ? 20 : Math.min(limit, 50);
+        if (searchIndexer == null) return List.of();
         return searchIndexer.search(conversationId, keyword, size);
     }
 
     /** 全局检索「与我相关」的消息（我的单聊 + 我所在的群聊） */
     public List<MessageView> searchGlobal(Long userId, String keyword, int limit) {
         int size = limit <= 0 ? 20 : Math.min(limit, 50);
+        if (searchIndexer == null) return List.of();
         return searchIndexer.searchGlobal(userId, groupPort.myGroupIds(userId), keyword, size);
     }
 
@@ -367,7 +370,7 @@ public class MessageService {
         if (!CLIENT_SENDABLE.contains(request.type())) {
             throw new BizException(ErrorCode.BAD_REQUEST, "不允许的消息类型: " + request.type());
         }
-        if (request.isGroupMessage() == (request.receiverId() == null)) {
+        if ((request.groupId() == null) == (request.receiverId() == null)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "receiverId 与 groupId 必须二选一");
         }
     }

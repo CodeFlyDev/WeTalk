@@ -44,6 +44,8 @@ public class OfflineEventPublisher {
             kafkaTemplate.send(TOPIC_OFFLINE, String.valueOf(receiverId), objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             log.error("offline event serialize failed, messageId={}", doc.getId(), e);
+        } catch (Exception e) {
+            log.warn("offline event publish skipped (kafka unavailable), messageId={}, receiver={}", doc.getId(), receiverId, e);
         }
     }
 }
